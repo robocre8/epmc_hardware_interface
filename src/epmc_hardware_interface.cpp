@@ -32,7 +32,7 @@ namespace epmc_hardware_interface
 {
   auto epmcReadWriteTime = std::chrono::system_clock::now();
   std::chrono::duration<double> epmcReadWriteDuration;
-  float epmcReadWriteTimeInterval = 0.01; // 100Hz
+  float epmcReadWriteTimeInterval = 0.015; // ~66Hz
 
   hardware_interface::CallbackReturn EPMC_HardwareInterface::on_init(const hardware_interface::HardwareComponentInterfaceParams &info)
   {
