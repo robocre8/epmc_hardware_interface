@@ -32,7 +32,7 @@ namespace epmc_hardware_interface
 {
   auto epmcReadWriteTime = std::chrono::system_clock::now();
   std::chrono::duration<double> epmcReadWriteDuration;
-  float epmcReadWriteTimeInterval = 0.010; // ~100Hz
+  float epmcReadWriteTimeInterval = 0.01; // 100Hz
 
   hardware_interface::CallbackReturn EPMC_HardwareInterface::on_init(const hardware_interface::HardwareComponentInterfaceParams &info)
   {
@@ -185,12 +185,13 @@ namespace epmc_hardware_interface
         try {
           float pos0, pos1, v0, v1;
           // Read latest state from hardware
-          epmc_.readMotorData(pos0, pos1, v0, v1);
+          bool success = epmc_.readMotorData(pos0, pos1, v0, v1);
           {
             std::lock_guard<std::mutex> lock(data_mutex_);
-            pos_cache_[0] = pos0; pos_cache_[1] = pos1;
-            vel_cache_[0] = v0;   vel_cache_[1] = v1;
-
+            if (success){
+              pos_cache_[0] = pos0; pos_cache_[1] = pos1;
+              vel_cache_[0] = v0;   vel_cache_[1] = v1;
+            }
             // Write latest commands
             epmc_.writeSpeed(cmd_cache_[0], cmd_cache_[1]);
           }
