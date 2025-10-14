@@ -118,13 +118,13 @@ public:
 
   int setCmdTimeout(int timeout_ms)
   {
-    float res = write_data1(SET_CMD_TIMEOUT, 0, (float)timeout_ms);
+    float res = write_data1(SET_CMD_TIMEOUT, 100, (float)timeout_ms);
     return (int)res;
   }
 
   int getCmdTimeout()
   {
-    float timeout_ms = read_data1(GET_CMD_TIMEOUT, 0);
+    float timeout_ms = read_data1(GET_CMD_TIMEOUT, 100);
     return (int)timeout_ms;
   }
 
@@ -142,7 +142,7 @@ public:
 
   int clearDataBuffer()
   {
-    float res = write_data1(CLEAR_DATA_BUFFER, 0, 0.0);
+    float res = write_data1(CLEAR_DATA_BUFFER, 100, 0.0);
     return (int)res;
   }
 
