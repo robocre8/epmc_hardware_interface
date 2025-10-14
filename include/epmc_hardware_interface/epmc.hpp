@@ -176,30 +176,59 @@ private:
       serial_conn_.Write(packet);
   }
 
-  float read_packet1() {
+  bool read_packet1(float &val) {
       std::vector<uint8_t> payload(4);
-      serial_conn_.Read(payload, 4);
-      float val;
+      try {
+        serial_conn_.Read(payload, 4, timeout_ms_);
+      } catch (const LibSerial::ReadTimeout&) {
+          std::cerr << "[EPMC SERIAL COMM]: Timeout while reading packet1" << std::endl;
+          return false;
+      }
+      if (payload.size() < 4) {
+        std::cerr << "[EPMC SERIAL COMM]: Incomplete packet — received only "
+                  << payload.size() << " bytes instead of 4." << std::endl;
+        return false;
+      }
       std::memcpy(&val, payload.data(), sizeof(float)); // little-endian assumed
-      return val;
+      return true;
   }
 
-  void read_packet2(float &val0, float &val1) {
+  bool read_packet2(float &val0, float &val1) {
       std::vector<uint8_t> payload(8);
-      serial_conn_.Read(payload, 2);
-
+      try {
+        serial_conn_.Read(payload, 8, timeout_ms_);
+      } catch (const LibSerial::ReadTimeout&) {
+          std::cerr << "[EPMC SERIAL COMM]: Timeout while reading packet2" << std::endl;
+          return false;
+      }
+      if (payload.size() < 8) {
+        std::cerr << "[EPMC SERIAL COMM]: Incomplete packet — received only "
+                  << payload.size() << " bytes instead of 8." << std::endl;
+        return false;
+      }
       std::memcpy(&val0, payload.data() + 0, sizeof(float));
       std::memcpy(&val1, payload.data() + 4, sizeof(float));
+      return true;
   }
 
-  void read_packet4(float &val0, float &val1, float &val2, float &val3) {
+  bool read_packet4(float &val0, float &val1, float &val2, float &val3) {
       std::vector<uint8_t> payload(16);
-      serial_conn_.Read(payload, 16);
-
+      try {
+        serial_conn_.Read(payload, 16, timeout_ms_);
+      } catch (const LibSerial::ReadTimeout&) {
+          std::cerr << "[EPMC SERIAL COMM]: Timeout while reading packet4" << std::endl;
+          return false;
+      }
+      if (payload.size() < 16) {
+        std::cerr << "[EPMC SERIAL COMM]: Incomplete packet — received only "
+                  << payload.size() << " bytes instead of 16." << std::endl;
+        return false;
+      }
       std::memcpy(&val0, payload.data() + 0, sizeof(float));
       std::memcpy(&val1, payload.data() + 4, sizeof(float));
       std::memcpy(&val2, payload.data() + 8, sizeof(float));
       std::memcpy(&val3, payload.data() + 12, sizeof(float));
+      return true;
   }
 
   // ------------------- High-Level Wrappers -------------------
@@ -208,7 +237,12 @@ private:
       payload[0] = pos;
       std::memcpy(&payload[1], &val, sizeof(float));
       send_packet_with_payload(cmd, payload);
-      return read_packet1();
+      float data;
+      if (!read_packet1(data)) {
+        // std::cerr << "EPMC SERIAL COMM: Failed to read packet!" << std::endl;
+        return 0.0;
+      }
+      return data;
   }
 
   float read_data1(uint8_t cmd, uint8_t pos) {
@@ -217,7 +251,12 @@ private:
       payload[0] = pos;
       std::memcpy(&payload[1], &zero, sizeof(float));
       send_packet_with_payload(cmd, payload);
-      return read_packet1();
+      float val;
+      if (!read_packet1(val)) {
+        // std::cerr << "EPMC SERIAL COMM: Failed to read packet!" << std::endl;
+        return 0.0;
+      }
+      return val;
   }
 
   void write_data2(uint8_t cmd, float a, float b) {
@@ -229,12 +268,22 @@ private:
 
   void read_data2(uint8_t cmd, float &a, float &b) {
       send_packet_without_payload(cmd);
-      return read_packet2(a, b);
+      if (!read_packet2(a, b)) {
+        // std::cerr << "EPMC SERIAL COMM: Failed to read packet!" << std::endl;
+        // a = 0.0;
+        // b = 0.0;
+      }
   }
 
   void read_data4(uint8_t cmd, float &a, float &b, float &c, float &d) {
       send_packet_without_payload(cmd);
-      return read_packet4(a, b, c, d);
+      if (!read_packet4(a, b, c, d)) {
+        // std::cerr << "EPMC SERIAL COMM: Failed to read packet!" << std::endl;
+        // a = 0.0;
+        // b = 0.0;
+        // c = 0.0;
+        // d = 0.0;
+      }
   }
 
 };
