@@ -157,11 +157,11 @@ namespace epmc_hardware_interface
   {
     std::lock_guard<std::mutex> lock(data_mutex_);
 
-      motor0_.angPos = pos_cache_[0];
-      motor0_.angVel = vel_cache_[0];
+      motor0_.angPos = pos0_cache_;
+      motor0_.angVel = vel0_cache_;
 
-      motor1_.angPos = pos_cache_[1];
-      motor1_.angVel = vel_cache_[1];
+      motor1_.angPos = pos1_cache_;
+      motor1_.angVel = vel1_cache_;
 
     return hardware_interface::return_type::OK;
   }
@@ -170,8 +170,8 @@ namespace epmc_hardware_interface
   {
     std::lock_guard<std::mutex> lock(data_mutex_);
 
-    cmd_cache_[0] = motor0_.cmdAngVel;
-    cmd_cache_[1] = motor1_.cmdAngVel;
+    cmd0_cache_ = motor0_.cmdAngVel;
+    cmd1_cache_ = motor1_.cmdAngVel;
 
     return hardware_interface::return_type::OK;
   }
@@ -189,11 +189,12 @@ namespace epmc_hardware_interface
           {
             std::lock_guard<std::mutex> lock(data_mutex_);
             if (success){
-              pos_cache_[0] = pos0; pos_cache_[1] = pos1;
-              vel_cache_[0] = v0;   vel_cache_[1] = v1;
+              pos0_cache_ = pos0; pos1_cache_ = pos1;
+              vel0_cache_ = v0;   vel1_cache_ = v1;
             }
+
             // Write latest commands
-            epmc_.writeSpeed(cmd_cache_[0], cmd_cache_[1]);
+            epmc_.writeSpeed(cmd0_cache_, cmd1_cache_);
           }
         }
         catch (...) {
