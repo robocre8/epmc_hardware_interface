@@ -6,8 +6,8 @@
     <ros2_control name="${name}_front" type="system">
       <hardware>
         <plugin>epmc_hardware_interface/EPMC_HardwareInterface</plugin>
-        <param name="motorB_wheel_name">front_left_wheel_joint</param>
-        <param name="motorA_wheel_name">front_right_wheel_joint</param>
+        <param name="motor0_wheel_name">front_left_wheel_joint</param>
+        <param name="motor1_wheel_name">front_right_wheel_joint</param>
         <param name="port">/dev/ttyUSB0</param>
         <param name="cmd_vel_timeout_ms">2000</param>
       </hardware>
@@ -34,8 +34,8 @@
     <ros2_control name="${name}_rear" type="system">
       <hardware>
         <plugin>epmc_hardware_interface/EPMC_HardwareInterface</plugin>
-        <param name="motorB_wheel_name">rear_left_wheel_joint</param>
-        <param name="motorA_wheel_name">rear_right_wheel_joint</param>
+        <param name="motor0_wheel_name">rear_left_wheel_joint</param>
+        <param name="motor1_wheel_name">rear_right_wheel_joint</param>
         <param name="port">/dev/ttyUSB1</param>
         <param name="cmd_vel_timeout_ms">2000</param>
       </hardware>
