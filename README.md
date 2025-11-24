@@ -1,5 +1,5 @@
 ## EPMC (Easy PID Motor Controller) ROS2 Hardware Interface Package
-This the **ROS2** Hardware Interface Package for the **`EPMC (Easy PID Motor Controller) Module`** (i.e **`L298N EPMC Module`** or any **`Custom EPMC Interface Board`**) with **ROS2** in a PC or microcomputer, after successful setup with the [epmc_setup_application](https://github.com/robocre8/epmc_setup_application).
+This the **ROS2** Hardware Interface Package for the **`EPMC (Easy PID Motor Controller) Module`** with **ROS2** in a PC or microcomputer, after successful setup with the [epmc_setup_application](https://github.com/robocre8/epmc_setup_application).
 
 #
 
@@ -55,19 +55,12 @@ This the **ROS2** Hardware Interface Package for the **`EPMC (Easy PID Motor Con
 - ensure the **`Easy PID Motor Controller (EPMC) Module`** (i.e **`L298N EPMC Module`** or any **`Custom EPMC Interface Board`**), with the motors connected and fully set up for velocity PID, is connected to the microcomputer or PC via USB.
 
 - check the serial port the driver is connected to:
-  > The best way to select the right serial port (if you are using multiple serial device) is to select by path
   ```shell
-  ls /dev/serial/by-path
+  ls /dev/ttyA*
   ```
-  > you should see a value (if the driver is connected and seen by the computer), your serial port would be -> /dev/serial/by-path/[value]. for more info visit this tutorial from [ArticulatedRobotics](https://www.youtube.com/watch?v=eJZXRncGaGM&list=PLunhqkrRNRhYAffV8JDiFOatQXuU-NnxT&index=8)
+  > you should see /dev/ttyACM0 or /dev/ttyACM1 and so on
 
-  - OR you can also try this:
-  ```shell
-  ls /dev/ttyU*
-  ```
-  > you should see /dev/ttyUSB0 or /dev/ttyUSB1 and so on
-
-- once you have gotten the **port**, update the **port** parameter in the **`<ros2_control>`** tag in the URDF's **`epmc_ros2_control.xacro`**
+- once you have gotten the **port**, update the **port** parameter in the **`<ros2_control>`** tag in the URDF's **`ros2_control.xacro`**
 
 - you can the build and run your robot.
 
