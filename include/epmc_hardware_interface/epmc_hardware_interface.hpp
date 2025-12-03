@@ -77,6 +77,9 @@ namespace epmc_hardware_interface
     Motor motor0_;      // motor0 setup
     Motor motor1_;      // motor1 setup
 
+    bool use_motor0_ = false;
+    bool use_motor1_ = false;
+
     // Background thread for non-blocking serial I/O
     std::thread io_thread_;
     std::atomic<bool> running_{false};
