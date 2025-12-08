@@ -64,11 +64,11 @@ namespace epmc_hardware_interface
 
     if(use_motor0_){
       state_interfaces.emplace_back(hardware_interface::StateInterface(motor0_.name, hardware_interface::HW_IF_POSITION, &motor0_.angPos));
-      state_interfaces.emplace_back(hardware_interface::StateInterface(motor0_.name, hardware_interface::HW_IF_VELOCITY, &motor0_.angVel));
+      // state_interfaces.emplace_back(hardware_interface::StateInterface(motor0_.name, hardware_interface::HW_IF_VELOCITY, &motor0_.angVel));
     }
     if(use_motor1_){
       state_interfaces.emplace_back(hardware_interface::StateInterface(motor1_.name, hardware_interface::HW_IF_POSITION, &motor1_.angPos));
-      state_interfaces.emplace_back(hardware_interface::StateInterface(motor1_.name, hardware_interface::HW_IF_VELOCITY, &motor1_.angVel));
+      // state_interfaces.emplace_back(hardware_interface::StateInterface(motor1_.name, hardware_interface::HW_IF_VELOCITY, &motor1_.angVel));
     }
 
     return state_interfaces;
@@ -172,11 +172,11 @@ namespace epmc_hardware_interface
 
     if(use_motor0_){
       motor0_.angPos = pos0_cache_;
-      motor0_.angVel = vel0_cache_;
+      // motor0_.angVel = vel0_cache_;
     }
     if(use_motor1_){
       motor1_.angPos = pos1_cache_;
-      motor1_.angVel = vel1_cache_;
+      // motor1_.angVel = vel1_cache_;
     }
 
     return hardware_interface::return_type::OK;
@@ -203,16 +203,18 @@ namespace epmc_hardware_interface
       if (epmcReadWriteDuration.count() > epmcReadWriteTimeInterval)
       {
         try {
-          float pos0, pos1, v0, v1;
           // Read latest state from hardware
-          epmc_.readMotorData(pos0, pos1, v0, v1);
+          // float pos0, pos1, v0, v1;
+          // epmc_.readMotorData(pos0, pos1, v0, v1);
+          float pos0, pos1;
+          epmc_.readPos(pos0, pos1);
           {
             std::lock_guard<std::mutex> lock(data_mutex_);
             pos0_cache_ = pos0; 
             pos1_cache_ = pos1;
 
-            vel0_cache_ = v0;
-            vel1_cache_ = v1;
+            // vel0_cache_ = v0;
+            // vel1_cache_ = v1;
 
             // Write latest commands
             epmc_.writeSpeed(cmd0_cache_, cmd1_cache_);

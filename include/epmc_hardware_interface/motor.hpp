@@ -12,7 +12,7 @@ class Motor
     std::string name = "";
     double cmdAngVel = 0.0; // velocity command interface
     double angPos = 0.0; // position state interface
-    double angVel = 0.0; // velocity state interface
+    // double angVel = 0.0; // velocity state interface
 
     Motor() = default;
 
