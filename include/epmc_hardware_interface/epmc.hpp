@@ -17,23 +17,23 @@ double round_to_dp(double value, int decimal_places) {
     return std::round(value * multiplier) / multiplier;
 }
 
-class EPMCSerialError : public std::exception
-{
-public:
-    EPMCSerialError(const std::string& msg) : m_msg(msg) {}
+// class EPMCSerialError : public std::exception
+// {
+// public:
+//     EPMCSerialError(const std::string& msg) : m_msg(msg) {}
 
-   ~EPMCSerialError()
-   {
-        std::cout << "EPMCSerialError::~EPMCSerialError" << std::endl;
-   }
+//    ~EPMCSerialError()
+//    {
+//         std::cout << "EPMCSerialError::~EPMCSerialError" << std::endl;
+//    }
 
-   virtual const char* what() const throw () 
-   {
-        return m_msg.c_str();
-   }
+//    virtual const char* what() const throw () 
+//    {
+//         return m_msg.c_str();
+//    }
 
-   const std::string m_msg;
-};
+//    const std::string m_msg;
+// };
 
 // Serial Protocol Command IDs -------------
 const uint8_t START_BYTE = 0xAA;
@@ -165,19 +165,19 @@ public:
 
   bool setCmdTimeout(int timeout_ms)
   {
-    float res = write_data1(SET_CMD_TIMEOUT, 100, (float)timeout_ms);
+    float res = write_data1(SET_CMD_TIMEOUT, (float)timeout_ms);
     return ((int)res == 1);
   }
 
   int getCmdTimeout()
   {
-    float timeout_ms = read_data1(GET_CMD_TIMEOUT, 100);
+    float timeout_ms = read_data1(GET_CMD_TIMEOUT);
     return (int)timeout_ms;
   }
 
   bool setPidMode(int motor_no, int mode)
   {
-    float res = write_data1(SET_PID_MODE, (uint8_t)motor_no, (float)mode);
+    float res = write_data1(SET_PID_MODE, (float)mode, (uint8_t)motor_no);
     return ((int)res == 1);
   }
 
@@ -189,7 +189,7 @@ public:
 
   bool clearDataBuffer()
   {
-    float res = write_data1(CLEAR_DATA_BUFFER, 100, 0.0);
+    float res = write_data1(CLEAR_DATA_BUFFER, 0.0);
     return ((int)res == 1);
   }
 
@@ -203,11 +203,12 @@ private:
       return sum & 0xFF;
   }
 
-  void send_packet_without_payload(uint8_t cmd) {
-      std::vector<uint8_t> packet = {START_BYTE, cmd, 0}; // no payload
+  void send_packet_without_payload(uint8_t cmd, uint8_t len=0) {
+      std::vector<uint8_t> packet = {START_BYTE, cmd, len}; // no payload
       uint8_t checksum = calcChecksum(packet);
       packet.push_back(checksum);
       serial_conn_.Write(packet);
+      serial_conn_.DrainWriteBuffer();
   }
 
   void send_packet_with_payload(uint8_t cmd, const std::vector<uint8_t>& payload) {
@@ -216,14 +217,16 @@ private:
       uint8_t checksum = calcChecksum(packet);
       packet.push_back(checksum);
       serial_conn_.Write(packet);
+      serial_conn_.DrainWriteBuffer();
   }
 
   void read_packet1(float &val) {
       std::vector<uint8_t> payload;
       serial_conn_.Read(payload, 4, timeout_ms_);
       if (payload.size() < 4) {
-        std::cerr << "[EPMC SERIAL ERROR]: Timeout while reading 1 values" << std::endl;
-        throw EPMCSerialError("[EPMC SERIAL ERROR]: Timeout while reading 1 values");
+        val = 0.0;
+        // std::cerr << "[EPMC SERIAL ERROR]: Timeout while reading 1 values" << std::endl;
+        // throw EPMCSerialError("[EPMC SERIAL ERROR]: Timeout while reading 1 values");
       }
       std::memcpy(&val, payload.data(), sizeof(float)); // little-endian assumed
   }
@@ -232,8 +235,10 @@ private:
       std::vector<uint8_t> payload;
       serial_conn_.Read(payload, 8, timeout_ms_);
       if (payload.size() < 8) {
-        std::cerr << "[EPMC SERIAL ERROR]: Timeout while reading 2 values" << std::endl;
-        throw EPMCSerialError("[EPMC SERIAL ERROR]: Timeout while reading 2 values");
+        val0 = 0.0;
+        val1 = 0.0;
+        // std::cerr << "[EPMC SERIAL ERROR]: Timeout while reading 2 values" << std::endl;
+        // throw EPMCSerialError("[EPMC SERIAL ERROR]: Timeout while reading 2 values");
       }
       std::memcpy(&val0, payload.data() + 0, sizeof(float));
       std::memcpy(&val1, payload.data() + 4, sizeof(float));
@@ -243,8 +248,12 @@ private:
       std::vector<uint8_t> payload;
       serial_conn_.Read(payload, 16, timeout_ms_);
       if (payload.size() < 16) {
-        std::cerr << "[EPMC SERIAL ERROR]: Timeout while reading 4 values" << std::endl;
-        throw EPMCSerialError("[EPMC SERIAL ERROR]: Timeout while reading 4 values");
+        val0 = 0.0;
+        val1 = 0.0;
+        val2 = 0.0;
+        val3 = 0.0;
+        // std::cerr << "[EPMC SERIAL ERROR]: Timeout while reading 4 values" << std::endl;
+        // throw EPMCSerialError("[EPMC SERIAL ERROR]: Timeout while reading 4 values");
       }
       std::memcpy(&val0, payload.data() + 0, sizeof(float));
       std::memcpy(&val1, payload.data() + 4, sizeof(float));
@@ -253,7 +262,7 @@ private:
   }
 
   // ------------------- High-Level Wrappers -------------------
-  float write_data1(uint8_t cmd, uint8_t pos, float val) {
+  float write_data1(uint8_t cmd, float val, uint8_t pos=100) {
       std::vector<uint8_t> payload(sizeof(uint8_t) + sizeof(float));
       payload[0] = pos;
       std::memcpy(&payload[1], &val, sizeof(float));
@@ -263,7 +272,7 @@ private:
       return data;
   }
 
-  float read_data1(uint8_t cmd, uint8_t pos) {
+  float read_data1(uint8_t cmd, uint8_t pos=100) {
       float zero = 0.0f;
       std::vector<uint8_t> payload(sizeof(uint8_t) + sizeof(float));
       payload[0] = pos;
