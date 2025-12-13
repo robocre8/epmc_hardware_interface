@@ -17,24 +17,6 @@ double round_to_dp(double value, int decimal_places) {
     return std::round(value * multiplier) / multiplier;
 }
 
-// class EPMCSerialError : public std::exception
-// {
-// public:
-//     EPMCSerialError(const std::string& msg) : m_msg(msg) {}
-
-//    ~EPMCSerialError()
-//    {
-//         std::cout << "EPMCSerialError::~EPMCSerialError" << std::endl;
-//    }
-
-//    virtual const char* what() const throw () 
-//    {
-//         return m_msg.c_str();
-//    }
-
-//    const std::string m_msg;
-// };
-
 // Serial Protocol Command IDs -------------
 const uint8_t START_BYTE = 0xAA;
 const uint8_t WRITE_VEL = 0x01;
@@ -92,7 +74,7 @@ class EPMC
 public:
   EPMC() = default;
 
-  void connect(const std::string &serial_device, int32_t baud_rate = 115200, int32_t timeout_ms = 100)
+  void connect(const std::string &serial_device, int32_t baud_rate = 57600, int32_t timeout_ms = 100)
   {
     try {
       timeout_ms_ = timeout_ms;
@@ -127,70 +109,78 @@ public:
     write_data2(WRITE_VEL, v0, v1);
   }
 
-  void readPos(float &pos0, float& pos1)
+  bool readPos(float &pos0, float& pos1)
   {
-    read_data2(READ_POS, pos0, pos1);
+    bool res = read_data2(READ_POS, pos0, pos1);
     pos0 = round_to_dp(pos0, 4);
     pos1 = round_to_dp(pos1, 4);
+    return res;
   }
 
-  void readVel(float &v0, float& v1)
+  bool readVel(float &v0, float& v1)
   {
-    read_data2(READ_VEL, v0, v1);
+    bool res = read_data2(READ_VEL, v0, v1);
     v0 = round_to_dp(v0, 4);
     v1 = round_to_dp(v1, 4);
+    return res;
   }
 
-  void readUVel(float &v0, float& v1)
+  bool readUVel(float &v0, float& v1)
   {
-    read_data2(READ_UVEL, v0, v1);
+    bool res = read_data2(READ_UVEL, v0, v1);
     v0 = round_to_dp(v0, 4);
     v1 = round_to_dp(v1, 4);
+    return res;
   }
 
-  void readMotorData(float &pos0, float& pos1, float &v0, float& v1)
+  bool readMotorData(float &pos0, float& pos1, float &v0, float& v1)
   {
-    read_data4(READ_MOTOR_DATA, pos0, pos1, v0, v1);
+    bool res = read_data4(READ_MOTOR_DATA, pos0, pos1, v0, v1);
     pos0 = round_to_dp(pos0, 4);
     pos1 = round_to_dp(pos1, 4);
     v0 = round_to_dp(v0, 4);
     v1 = round_to_dp(v1, 4);
+    return res;
   }
 
-  float getMaxVel(int motor_no)
+  bool getMaxVel(float &max_vel, int motor_no)
   {
-    float max_vel = read_data1(GET_MAX_VEL, motor_no);
-    return round_to_dp(max_vel, 4);
+    bool res = read_data1(GET_MAX_VEL, max_vel, motor_no);
+    round_to_dp(max_vel, 4);
+    return res;
   }
 
-  bool setCmdTimeout(int timeout_ms)
+  void setCmdTimeout(int timeout_ms)
   {
-    float res = write_data1(SET_CMD_TIMEOUT, (float)timeout_ms);
-    return ((int)res == 1);
+    write_data1(SET_CMD_TIMEOUT, (float)timeout_ms);
   }
 
-  int getCmdTimeout()
+  bool getCmdTimeout(int &timeout_ms)
   {
-    float timeout_ms = read_data1(GET_CMD_TIMEOUT);
-    return (int)timeout_ms;
+    float timeout_ms_;
+    bool res = read_data1(GET_CMD_TIMEOUT, timeout_ms_);
+    timeout_ms = (int)timeout_ms_;
+    return res;
   }
 
-  bool setPidMode(int motor_no, int mode)
+  void setPidMode(int mode, int motor_no)
   {
-    float res = write_data1(SET_PID_MODE, (float)mode, (uint8_t)motor_no);
-    return ((int)res == 1);
+    write_data1(SET_PID_MODE, (float)mode, (uint8_t)motor_no);
   }
 
-  int getPidMode(int motor_no)
+  bool getPidMode(int &mode, int motor_no)
   {
-    float mode = read_data1(GET_PID_MODE, (uint8_t)motor_no);
-    return (int)mode;
+    float mode_;
+    bool res = read_data1(GET_PID_MODE, mode_, (uint8_t)motor_no);
+    mode = (int)mode_;
+    return res;
   }
 
   bool clearDataBuffer()
   {
-    float res = write_data1(CLEAR_DATA_BUFFER, 0.0);
-    return ((int)res == 1);
+    float clear_;
+    bool res = read_data1(CLEAR_DATA_BUFFER, clear_);
+    return res;
   }
 
 private:
@@ -198,89 +188,111 @@ private:
   int timeout_ms_;
 
   uint8_t calcChecksum(const std::vector<uint8_t>& packet) {
-      uint32_t sum = 0;
-      for (auto b : packet) sum += b;
-      return sum & 0xFF;
+    uint32_t sum = 0;
+    for (auto b : packet) sum += b;
+    return sum & 0xFF;
   }
 
   void send_packet_without_payload(uint8_t cmd, uint8_t len=0) {
-      std::vector<uint8_t> packet = {START_BYTE, cmd, len}; // no payload
-      uint8_t checksum = calcChecksum(packet);
-      packet.push_back(checksum);
-      serial_conn_.Write(packet);
-      serial_conn_.DrainWriteBuffer();
+    std::vector<uint8_t> packet = {START_BYTE, cmd, len}; // no payload
+    uint8_t checksum = calcChecksum(packet);
+    packet.push_back(checksum);
+    serial_conn_.Write(packet);
+    serial_conn_.DrainWriteBuffer();
   }
 
   void send_packet_with_payload(uint8_t cmd, const std::vector<uint8_t>& payload) {
-      std::vector<uint8_t> packet = {START_BYTE, cmd, (uint8_t)payload.size()};
-      packet.insert(packet.end(), payload.begin(), payload.end());
-      uint8_t checksum = calcChecksum(packet);
-      packet.push_back(checksum);
-      serial_conn_.Write(packet);
-      serial_conn_.DrainWriteBuffer();
+    std::vector<uint8_t> packet = {START_BYTE, cmd, (uint8_t)payload.size()};
+    packet.insert(packet.end(), payload.begin(), payload.end());
+    uint8_t checksum = calcChecksum(packet);
+    packet.push_back(checksum);
+    serial_conn_.Write(packet);
+    serial_conn_.DrainWriteBuffer();
   }
 
-  void read_packet1(float &val) {
-      std::vector<uint8_t> payload;
+  bool read_packet1(float &val) {
+    std::vector<uint8_t> payload;
+    try
+    {
       serial_conn_.Read(payload, 4, timeout_ms_);
       if (payload.size() < 4) {
-        val = 0.0;
         // std::cerr << "[EPMC SERIAL ERROR]: Timeout while reading 1 values" << std::endl;
-        // throw EPMCSerialError("[EPMC SERIAL ERROR]: Timeout while reading 1 values");
+        val = 0.0;
+        return false;
       }
       std::memcpy(&val, payload.data(), sizeof(float)); // little-endian assumed
+      return true;
+    }
+    catch(const LibSerial::ReadTimeout &e)
+    {
+      // std::cerr << "[LIB SERIAL ERROR]: ReadTimeout" << std::endl;
+      val = 0.0;
+      return false;
+    }
   }
 
-  void read_packet2(float &val0, float &val1) {
-      std::vector<uint8_t> payload;
+  bool read_packet2(float &val0, float &val1) {
+    std::vector<uint8_t> payload;
+    try
+    {
       serial_conn_.Read(payload, 8, timeout_ms_);
       if (payload.size() < 8) {
-        val0 = 0.0;
-        val1 = 0.0;
         // std::cerr << "[EPMC SERIAL ERROR]: Timeout while reading 2 values" << std::endl;
-        // throw EPMCSerialError("[EPMC SERIAL ERROR]: Timeout while reading 2 values");
+        val0 = 0.0;
+        val1 = 0.0; 
+        return false;
       }
       std::memcpy(&val0, payload.data() + 0, sizeof(float));
       std::memcpy(&val1, payload.data() + 4, sizeof(float));
+      return true;
+    }
+    catch(const LibSerial::ReadTimeout &e)
+    {
+      // std::cerr << "[LIB SERIAL ERROR]: ReadTimeout" << std::endl;
+      val0 = 0.0;
+      val1 = 0.0;
+      return false;
+    }
   }
 
-  void read_packet4(float &val0, float &val1, float &val2, float &val3) {
-      std::vector<uint8_t> payload;
+  bool read_packet4(float &val0, float &val1, float &val2, float &val3) {
+    std::vector<uint8_t> payload;
+    try
+    {
       serial_conn_.Read(payload, 16, timeout_ms_);
       if (payload.size() < 16) {
+        // std::cerr << "[EPMC SERIAL ERROR]: Timeout while reading 4 values" << std::endl;
         val0 = 0.0;
         val1 = 0.0;
         val2 = 0.0;
         val3 = 0.0;
-        // std::cerr << "[EPMC SERIAL ERROR]: Timeout while reading 4 values" << std::endl;
-        // throw EPMCSerialError("[EPMC SERIAL ERROR]: Timeout while reading 4 values");
+        return false;
       }
       std::memcpy(&val0, payload.data() + 0, sizeof(float));
       std::memcpy(&val1, payload.data() + 4, sizeof(float));
       std::memcpy(&val2, payload.data() + 8, sizeof(float));
       std::memcpy(&val3, payload.data() + 12, sizeof(float));
+      return true;
+    }
+    catch(const LibSerial::ReadTimeout &e)
+    {
+      // std::cerr << "[LIB SERIAL ERROR]: ReadTimeout" << std::endl;
+      val0 = 0.0;
+      val1 = 0.0;
+      val2 = 0.0;
+      val3 = 0.0;
+      return false;
+    }
+
+      
   }
 
   // ------------------- High-Level Wrappers -------------------
-  float write_data1(uint8_t cmd, float val, uint8_t pos=100) {
+  void write_data1(uint8_t cmd, float val, uint8_t pos=100) {
       std::vector<uint8_t> payload(sizeof(uint8_t) + sizeof(float));
       payload[0] = pos;
       std::memcpy(&payload[1], &val, sizeof(float));
       send_packet_with_payload(cmd, payload);
-      float data;
-      read_packet1(data);
-      return data;
-  }
-
-  float read_data1(uint8_t cmd, uint8_t pos=100) {
-      float zero = 0.0f;
-      std::vector<uint8_t> payload(sizeof(uint8_t) + sizeof(float));
-      payload[0] = pos;
-      std::memcpy(&payload[1], &zero, sizeof(float));
-      send_packet_with_payload(cmd, payload);
-      float val;
-      read_packet1(val);
-      return val;
   }
 
   void write_data2(uint8_t cmd, float a, float b) {
@@ -290,14 +302,24 @@ private:
       send_packet_with_payload(cmd, payload);
   }
 
-  void read_data2(uint8_t cmd, float &a, float &b) {
-      send_packet_without_payload(cmd);
-      read_packet2(a, b);
+  bool read_data1(uint8_t cmd, float &val, uint8_t pos=100) {
+      std::vector<uint8_t> payload(sizeof(uint8_t) + sizeof(float));
+      payload[0] = pos;
+      send_packet_with_payload(cmd, payload);
+      bool res = read_packet1(val);
+      return res;
   }
 
-  void read_data4(uint8_t cmd, float &a, float &b, float &c, float &d) {
+  bool read_data2(uint8_t cmd, float &a, float &b) {
       send_packet_without_payload(cmd);
-      read_packet4(a, b, c, d);
+      bool res = read_packet2(a, b);
+      return res;
+  }
+
+  bool read_data4(uint8_t cmd, float &a, float &b, float &c, float &d) {
+      send_packet_without_payload(cmd);
+      bool res = read_packet4(a, b, c, d);
+      return res;
   }
 
 };

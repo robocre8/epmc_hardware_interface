@@ -80,6 +80,8 @@ namespace epmc_hardware_interface
     bool use_motor0_ = false;
     bool use_motor1_ = false;
 
+    bool success;
+
     // Background thread for non-blocking serial I/O
     std::thread io_thread_;
     std::atomic<bool> running_{false};
@@ -88,9 +90,13 @@ namespace epmc_hardware_interface
     // Cached state from motors
     float pos0_cache_ = 0.0;
     float pos1_cache_ = 0.0;
+    float pos0_prev_ = 0.0;
+    float pos1_prev_ = 0.0;
 
     // float vel0_cache_ = 0.0;
     // float vel1_cache_ = 0.0;
+    // float vel0_prev_ = 0.0;
+    // float vel1_prev_ = 0.0;
 
     // Cached command from ros2_control
     float cmd0_cache_ = 0.0;

@@ -103,12 +103,12 @@ namespace epmc_hardware_interface
       RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "waiting for EPMC controller: %d sec", (i));
     }
 
-    epmc_.clearDataBuffer();
+    success = epmc_.clearDataBuffer();
     epmc_.writeSpeed(0.0, 0.0);
 
     int cmd_timeout = std::stoi(config_.cmd_vel_timeout_ms.c_str());
     epmc_.setCmdTimeout(cmd_timeout); // set motor command timeout
-    cmd_timeout = epmc_.getCmdTimeout();
+    success = epmc_.getCmdTimeout(cmd_timeout);
 
     RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "motor_cmd_timeout_ms: %d ms", (cmd_timeout));
 
@@ -137,7 +137,7 @@ namespace epmc_hardware_interface
       return hardware_interface::CallbackReturn::ERROR;
     }
 
-    epmc_.clearDataBuffer();
+    success = epmc_.clearDataBuffer();
     epmc_.writeSpeed(0.0, 0.0);
 
     running_ = true;
@@ -158,7 +158,7 @@ namespace epmc_hardware_interface
       io_thread_.join();
     }
 
-    epmc_.clearDataBuffer();
+    success = epmc_.clearDataBuffer();
     epmc_.writeSpeed(0.0, 0.0);
 
     RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "Successfully Deactivated!");
@@ -207,7 +207,15 @@ namespace epmc_hardware_interface
           // float pos0, pos1, v0, v1;
           // epmc_.readMotorData(pos0, pos1, v0, v1);
           float pos0, pos1;
-          epmc_.readPos(pos0, pos1);
+          success = epmc_.readPos(pos0, pos1);
+          if (success) {
+            pos0_prev_ = pos0; 
+            pos1_prev_ = pos1;
+          } else {
+            pos0 = pos0_prev_; 
+            pos1 = pos1_prev_;
+          }
+
           {
             std::lock_guard<std::mutex> lock(data_mutex_);
             pos0_cache_ = pos0; 
