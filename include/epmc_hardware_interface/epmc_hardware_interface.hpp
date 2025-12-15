@@ -73,14 +73,16 @@ namespace epmc_hardware_interface
 
   private:
     EPMC epmc_; // serial communication
+
+    // buffer variables for epmc communication
+    bool success; float val0, val1, val2, val3;
+
     Config config_;        // configuration
     Motor motor0_;      // motor0 setup
     Motor motor1_;      // motor1 setup
 
     bool use_motor0_ = false;
     bool use_motor1_ = false;
-
-    bool success;
 
     // Background thread for non-blocking serial I/O
     std::thread io_thread_;
@@ -90,13 +92,9 @@ namespace epmc_hardware_interface
     // Cached state from motors
     float pos0_cache_ = 0.0;
     float pos1_cache_ = 0.0;
-    float pos0_prev_ = 0.0;
-    float pos1_prev_ = 0.0;
 
     // float vel0_cache_ = 0.0;
     // float vel1_cache_ = 0.0;
-    // float vel0_prev_ = 0.0;
-    // float vel1_prev_ = 0.0;
 
     // Cached command from ros2_control
     float cmd0_cache_ = 0.0;

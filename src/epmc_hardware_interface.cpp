@@ -108,9 +108,13 @@ namespace epmc_hardware_interface
 
     int cmd_timeout = std::stoi(config_.cmd_vel_timeout_ms.c_str());
     epmc_.setCmdTimeout(cmd_timeout); // set motor command timeout
-    success = epmc_.getCmdTimeout(cmd_timeout);
-
-    RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "motor_cmd_timeout_ms: %d ms", (cmd_timeout));
+    std::tie(success, val0) = epmc_.getCmdTimeout();
+    if (success) {
+      cmd_timeout = val0;
+      RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "motor_cmd_timeout_ms: %d ms", (cmd_timeout));
+    } else {
+      RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "ERROR: could not read motor_cmd_timeout_ms");
+    }
 
     RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "EPMC Started Successfully!");
 
@@ -205,15 +209,19 @@ namespace epmc_hardware_interface
         try {
           // Read latest state from hardware
           // float pos0, pos1, v0, v1;
-          // epmc_.readMotorData(pos0, pos1, v0, v1);
+          // std::tie(success, val0, val1, val2, val3) = epmc_.readMotorData();
+          // if (success) {
+          //   pos0 = val0; 
+          //   pos1 = val1;
+          //   v0 = val2; 
+          //   v1 = val3;
+          // }
+
           float pos0, pos1;
-          success = epmc_.readPos(pos0, pos1);
-          if (success) {
-            pos0_prev_ = pos0; 
-            pos1_prev_ = pos1;
-          } else {
-            pos0 = pos0_prev_; 
-            pos1 = pos1_prev_;
+          std::tie(success, val0, val1) = epmc_.readPos();
+          if (success) { // only update if read was successfull
+            pos0 = val0; 
+            pos1 = val1;
           }
 
           {

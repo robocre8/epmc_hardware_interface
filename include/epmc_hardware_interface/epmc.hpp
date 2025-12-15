@@ -80,10 +80,6 @@ public:
       timeout_ms_ = timeout_ms;
       serial_conn_.Open(serial_device);
       serial_conn_.SetBaudRate(convert_baud_rate(baud_rate));
-      serial_conn_.SetCharacterSize(LibSerial::CharacterSize::CHAR_SIZE_8);
-      serial_conn_.SetStopBits(LibSerial::StopBits::STOP_BITS_1);
-      serial_conn_.SetParity(LibSerial::Parity::PARITY_NONE);
-      serial_conn_.SetFlowControl(LibSerial::FlowControl::FLOW_CONTROL_NONE);
     } catch (const LibSerial::OpenFailed&) {
         std::cerr << "Failed to open serial port!" << std::endl;
     }
@@ -109,45 +105,41 @@ public:
     write_data2(WRITE_VEL, v0, v1);
   }
 
-  bool readPos(float &pos0, float& pos1)
+  std::tuple<bool, float, float> readPos()
   {
-    bool res = read_data2(READ_POS, pos0, pos1);
+    bool success; float pos0, pos1;
+    std::tie(success, pos0, pos1) = read_data2(READ_POS);
     pos0 = round_to_dp(pos0, 4);
     pos1 = round_to_dp(pos1, 4);
-    return res;
+    return std::make_tuple(success, pos0, pos1);
   }
 
-  bool readVel(float &v0, float& v1)
+  std::tuple<bool, float, float> readVel()
   {
-    bool res = read_data2(READ_VEL, v0, v1);
+    bool success; float v0, v1;
+    std::tie(success, v0, v1) = read_data2(READ_VEL);
     v0 = round_to_dp(v0, 4);
     v1 = round_to_dp(v1, 4);
-    return res;
+    return std::make_tuple(success, v0, v1);
   }
 
-  bool readUVel(float &v0, float& v1)
+  std::tuple<bool, float, float, float, float> readMotorData()
   {
-    bool res = read_data2(READ_UVEL, v0, v1);
-    v0 = round_to_dp(v0, 4);
-    v1 = round_to_dp(v1, 4);
-    return res;
-  }
-
-  bool readMotorData(float &pos0, float& pos1, float &v0, float& v1)
-  {
-    bool res = read_data4(READ_MOTOR_DATA, pos0, pos1, v0, v1);
+    bool success; float pos0, pos1, v0, v1;
+    std::tie(success, pos0, pos1, v0, v1) = read_data4(READ_MOTOR_DATA);
     pos0 = round_to_dp(pos0, 4);
     pos1 = round_to_dp(pos1, 4);
     v0 = round_to_dp(v0, 4);
     v1 = round_to_dp(v1, 4);
-    return res;
+    return std::make_tuple(success, pos0, pos1, v0, v1);
   }
 
-  bool getMaxVel(float &max_vel, int motor_no)
+  std::tuple<bool, float> getMaxVel(int motor_no)
   {
-    bool res = read_data1(GET_MAX_VEL, max_vel, motor_no);
-    round_to_dp(max_vel, 4);
-    return res;
+    bool success; float max_vel;
+    std::tie(success, max_vel) = read_data1(GET_MAX_VEL, (uint8_t)motor_no);
+    max_vel = round_to_dp(max_vel, 4);
+    return std::make_tuple(success, max_vel);
   }
 
   void setCmdTimeout(int timeout_ms)
@@ -155,12 +147,11 @@ public:
     write_data1(SET_CMD_TIMEOUT, (float)timeout_ms);
   }
 
-  bool getCmdTimeout(int &timeout_ms)
+  std::tuple<bool, int> getCmdTimeout()
   {
-    float timeout_ms_;
-    bool res = read_data1(GET_CMD_TIMEOUT, timeout_ms_);
-    timeout_ms = (int)timeout_ms_;
-    return res;
+    bool success; float timeout_ms;
+    std::tie(success, timeout_ms) = read_data1(GET_CMD_TIMEOUT);
+    return std::make_tuple(success, (int)timeout_ms);
   }
 
   void setPidMode(int mode, int motor_no)
@@ -168,19 +159,18 @@ public:
     write_data1(SET_PID_MODE, (float)mode, (uint8_t)motor_no);
   }
 
-  bool getPidMode(int &mode, int motor_no)
+  std::tuple<bool, int> getPidMode(int motor_no)
   {
-    float mode_;
-    bool res = read_data1(GET_PID_MODE, mode_, (uint8_t)motor_no);
-    mode = (int)mode_;
-    return res;
+    bool success; float mode;
+    std::tie(success, mode) = read_data1(GET_PID_MODE, (uint8_t)motor_no);
+    return std::make_tuple(success, (int)mode);
   }
 
   bool clearDataBuffer()
   {
-    float clear_;
-    bool res = read_data1(CLEAR_DATA_BUFFER, clear_);
-    return res;
+    bool success;
+    std::tie(success, std::ignore) = read_data1(CLEAR_DATA_BUFFER);
+    return success;
   }
 
 private:
@@ -210,78 +200,67 @@ private:
     serial_conn_.DrainWriteBuffer();
   }
 
-  bool read_packet1(float &val) {
+  std::tuple<bool, float> read_packet1() {
     std::vector<uint8_t> payload;
+    float val;
     try
     {
       serial_conn_.Read(payload, 4, timeout_ms_);
       if (payload.size() < 4) {
         // std::cerr << "[EPMC SERIAL ERROR]: Timeout while reading 1 values" << std::endl;
-        val = 0.0;
-        return false;
+        return std::make_tuple(false, 0.0);
       }
       std::memcpy(&val, payload.data(), sizeof(float)); // little-endian assumed
-      return true;
+      return std::make_tuple(true, val);
     }
     catch(const LibSerial::ReadTimeout &e)
     {
       // std::cerr << "[LIB SERIAL ERROR]: ReadTimeout" << std::endl;
-      val = 0.0;
-      return false;
+      return std::make_tuple(false, 0.0);
     }
   }
 
-  bool read_packet2(float &val0, float &val1) {
+  std::tuple<bool, float, float> read_packet2() {
     std::vector<uint8_t> payload;
+    float val0, val1;
     try
     {
       serial_conn_.Read(payload, 8, timeout_ms_);
       if (payload.size() < 8) {
         // std::cerr << "[EPMC SERIAL ERROR]: Timeout while reading 2 values" << std::endl;
-        val0 = 0.0;
-        val1 = 0.0; 
-        return false;
+        return std::make_tuple(false, 0.0, 0.0);
       }
       std::memcpy(&val0, payload.data() + 0, sizeof(float));
       std::memcpy(&val1, payload.data() + 4, sizeof(float));
-      return true;
+      return std::make_tuple(true, val0, val1);
     }
     catch(const LibSerial::ReadTimeout &e)
     {
       // std::cerr << "[LIB SERIAL ERROR]: ReadTimeout" << std::endl;
-      val0 = 0.0;
-      val1 = 0.0;
-      return false;
+      return std::make_tuple(false, 0.0, 0.0);
     }
   }
 
-  bool read_packet4(float &val0, float &val1, float &val2, float &val3) {
+  std::tuple<bool, float, float, float, float> read_packet4() {
     std::vector<uint8_t> payload;
+    float val0, val1, val2, val3;
     try
     {
       serial_conn_.Read(payload, 16, timeout_ms_);
       if (payload.size() < 16) {
         // std::cerr << "[EPMC SERIAL ERROR]: Timeout while reading 4 values" << std::endl;
-        val0 = 0.0;
-        val1 = 0.0;
-        val2 = 0.0;
-        val3 = 0.0;
-        return false;
+        return std::make_tuple(false, 0.0, 0.0, 0.0, 0.0);
       }
       std::memcpy(&val0, payload.data() + 0, sizeof(float));
       std::memcpy(&val1, payload.data() + 4, sizeof(float));
       std::memcpy(&val2, payload.data() + 8, sizeof(float));
       std::memcpy(&val3, payload.data() + 12, sizeof(float));
-      return true;
+      return std::make_tuple(true, val0, val1, val2, val3);
     }
     catch(const LibSerial::ReadTimeout &e)
     {
       // std::cerr << "[LIB SERIAL ERROR]: ReadTimeout" << std::endl;
-      val0 = 0.0;
-      val1 = 0.0;
-      val2 = 0.0;
-      val3 = 0.0;
-      return false;
+      return std::make_tuple(false, 0.0, 0.0, 0.0, 0.0);
     }
 
       
@@ -302,24 +281,27 @@ private:
       send_packet_with_payload(cmd, payload);
   }
 
-  bool read_data1(uint8_t cmd, float &val, uint8_t pos=100) {
+  std::tuple<bool, float> read_data1(uint8_t cmd, uint8_t pos=100) {
       std::vector<uint8_t> payload(sizeof(uint8_t) + sizeof(float));
       payload[0] = pos;
       send_packet_with_payload(cmd, payload);
-      bool res = read_packet1(val);
-      return res;
+      bool success; float val;
+      std::tie(success, val) = read_packet1();
+      return std::make_tuple(success, val);
   }
 
-  bool read_data2(uint8_t cmd, float &a, float &b) {
+  std::tuple<bool, float, float> read_data2(uint8_t cmd) {
       send_packet_without_payload(cmd);
-      bool res = read_packet2(a, b);
-      return res;
+      bool success; float a, b;
+      std::tie(success, a, b) = read_packet2();
+      return std::make_tuple(success, a, b);
   }
 
-  bool read_data4(uint8_t cmd, float &a, float &b, float &c, float &d) {
+  std::tuple<bool, float, float, float, float> read_data4(uint8_t cmd) {
       send_packet_without_payload(cmd);
-      bool res = read_packet4(a, b, c, d);
-      return res;
+      bool success; float a, b, c, d;
+      std::tie(success, a, b, c, d) = read_packet4();
+      return std::make_tuple(success, a, b, c, d);
   }
 
 };
