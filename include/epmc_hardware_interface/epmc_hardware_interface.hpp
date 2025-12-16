@@ -73,6 +73,10 @@ namespace epmc_hardware_interface
 
   private:
     EPMC epmc_; // serial communication
+
+    // buffer variables for epmc communication
+    bool success; float val0, val1, val2, val3;
+
     Config config_;        // configuration
     Motor motor0_;      // motor0 setup
     Motor motor1_;      // motor1 setup
