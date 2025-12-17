@@ -74,7 +74,7 @@ class EPMC
 public:
   EPMC() = default;
 
-  void connect(const std::string &serial_device, int32_t baud_rate = 57600, int32_t timeout_ms = 100)
+  void connect(const std::string &serial_device, int32_t baud_rate = 57600, int32_t timeout_ms = 10)
   {
     try {
       timeout_ms_ = timeout_ms;
@@ -188,7 +188,7 @@ private:
     uint8_t checksum = calcChecksum(packet);
     packet.push_back(checksum);
     serial_conn_.Write(packet);
-    serial_conn_.DrainWriteBuffer();
+    // serial_conn_.DrainWriteBuffer();
   }
 
   void send_packet_with_payload(uint8_t cmd, const std::vector<uint8_t>& payload) {
@@ -197,7 +197,7 @@ private:
     uint8_t checksum = calcChecksum(packet);
     packet.push_back(checksum);
     serial_conn_.Write(packet);
-    serial_conn_.DrainWriteBuffer();
+    // serial_conn_.DrainWriteBuffer();
   }
 
   std::tuple<bool, float> read_packet1() {

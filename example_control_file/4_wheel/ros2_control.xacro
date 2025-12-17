@@ -6,9 +6,11 @@
     <ros2_control name="${name}_front" type="system">
       <hardware>
         <plugin>epmc_hardware_interface/EPMC_HardwareInterface</plugin>
+        <param name="serial_port">/dev/ttyACM0</param>
+        <param name="serial_baud_rate">57600</param>
+        <param name="serial_timeout_ms">10</param>
         <param name="motor0_wheel_name">front_left_wheel_joint</param>
         <param name="motor1_wheel_name">front_right_wheel_joint</param>
-        <param name="port">/dev/ttyACM0</param>
         <param name="cmd_vel_timeout_ms">2000</param>
       </hardware>
 
@@ -34,9 +36,11 @@
     <ros2_control name="${name}_rear" type="system">
       <hardware>
         <plugin>epmc_hardware_interface/EPMC_HardwareInterface</plugin>
+        <param name="serial_port">/dev/ttyACM1</param>
+        <param name="serial_baud_rate">57600</param>
+        <param name="serial_timeout_ms">10</param>
         <param name="motor0_wheel_name">rear_left_wheel_joint</param>
         <param name="motor1_wheel_name">rear_right_wheel_joint</param>
-        <param name="port">/dev/ttyACM1</param>
         <param name="cmd_vel_timeout_ms">2000</param>
       </hardware>
 
