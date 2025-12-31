@@ -112,12 +112,12 @@ public:
 
   void writePWM(int pwm0, int pwm1)
   {
-    send(WRITE_PWM, (float)pwm0, (float)pwm1);
+    send((float)WRITE_PWM, (float)pwm0, (float)pwm1);
   }
 
   void writeSpeed(float v0, float v1)
   {
-    send(WRITE_SPEED, v0, v1);
+    send((float)WRITE_SPEED, v0, v1);
   }
 
   std::tuple<bool, float, float> readPos()
@@ -134,7 +134,7 @@ public:
     return std::make_tuple(success, v0, v1);
   }
 
-  std::tuple<bool, float> getMaxVel(int motor_no)
+  std::tuple<bool, float> getMaxSpeed(int motor_no)
   {
     bool success; float max_vel;
     std::tie(success, max_vel, std::ignore) = recv((float)GET_MAX_SPEED, (float)motor_no);
@@ -143,7 +143,7 @@ public:
 
   void setCmdTimeout(int timeout_ms)
   {
-    send((float)SET_CMD_TIMEOUT, (float)timeout_ms);
+    send((float)SET_CMD_TIMEOUT, 0.0, (float)timeout_ms);
   }
 
   std::tuple<bool, int> getCmdTimeout()
@@ -153,9 +153,9 @@ public:
     return std::make_tuple(success, (int)timeout_ms);
   }
 
-  void setPidMode(int mode, int motor_no)
+  void setPidMode(int motor_no, int mode)
   {
-    send((float)SET_PID_MODE, (float)mode, (float)motor_no);
+    send((float)SET_PID_MODE, (float)motor_no, (float)mode);
   }
 
   std::tuple<bool, int> getPidMode(int motor_no)
@@ -179,7 +179,7 @@ private:
   void send(float cmd, float arg1=0.0, float arg2=0.0)
   {
     std::ostringstream ss;
-    ss << cmd << " " << arg1 << " " << arg2 << "\r";
+    ss << cmd << " " << round_to_dp(arg1,4) << " " << round_to_dp(arg2,4) << "\r";
 
     serial_conn_.Write(ss.str());
   }
@@ -217,7 +217,7 @@ private:
       }
 
       success = true;
-      return std::make_tuple(success, data1, data2);
+      return std::make_tuple(success, round_to_dp(data1,4), round_to_dp(data2,4));
     }
     catch (...) {
       success = false;
