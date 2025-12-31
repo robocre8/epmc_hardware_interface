@@ -30,9 +30,6 @@ void delay_ms(unsigned long milliseconds)
 
 namespace epmc_hardware_interface
 {
-  auto epmcReadWriteTime = std::chrono::system_clock::now();
-  std::chrono::duration<double> epmcReadWriteDuration;
-  float epmcReadWriteTimeInterval = 0.01; // 100Hz - communication speed with epmc hardware
 
   hardware_interface::CallbackReturn EPMC_HardwareInterface::on_init(const hardware_interface::HardwareComponentInterfaceParams &info)
   {
@@ -41,9 +38,11 @@ namespace epmc_hardware_interface
       return hardware_interface::CallbackReturn::ERROR;
     }
 
+    config_.serial_port = info_.hardware_parameters["serial_port"];
+    config_.serial_baud_rate = info_.hardware_parameters["serial_baud_rate"];
+    config_.serial_timeout_ms = info_.hardware_parameters["serial_timeout_ms"];
     config_.motor0_wheel_name = info_.hardware_parameters["motor0_wheel_name"];
     config_.motor1_wheel_name = info_.hardware_parameters["motor1_wheel_name"];
-    config_.port = info_.hardware_parameters["port"];
     config_.cmd_vel_timeout_ms = info_.hardware_parameters["cmd_vel_timeout_ms"];
 
     if (config_.motor0_wheel_name != "") {
@@ -95,7 +94,14 @@ namespace epmc_hardware_interface
     {
       epmc_.disconnect();
     }
-    epmc_.connect(config_.port);
+
+    int serial_baud_rate = std::stoi(config_.serial_baud_rate.c_str());
+
+    int serial_timeout_ms = std::stoi(config_.serial_timeout_ms.c_str());
+    if (serial_timeout_ms <= 10)
+      serial_timeout_ms = 10;
+
+    epmc_.connect(config_.serial_port, serial_baud_rate, serial_timeout_ms);
 
     for (int i = 1; i <= 4; i += 1)
     { // wait for the smc to fully setup
@@ -144,10 +150,6 @@ namespace epmc_hardware_interface
     success = epmc_.clearDataBuffer();
     epmc_.writeSpeed(0.0, 0.0);
 
-    running_ = true;
-    io_thread_ = std::thread(&EPMC_HardwareInterface::serialReadWriteLoop, this);
-    epmcReadWriteTime = std::chrono::system_clock::now();
-
     RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "Successfully Activated");
 
     return hardware_interface::CallbackReturn::SUCCESS;
@@ -156,11 +158,6 @@ namespace epmc_hardware_interface
   hardware_interface::CallbackReturn EPMC_HardwareInterface::on_deactivate(const rclcpp_lifecycle::State &)
   {
     RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "Deactivating ...please wait...");
-
-    running_ = false;
-    if (io_thread_.joinable()) {
-      io_thread_.join();
-    }
 
     success = epmc_.clearDataBuffer();
     epmc_.writeSpeed(0.0, 0.0);
@@ -172,15 +169,17 @@ namespace epmc_hardware_interface
 
   hardware_interface::return_type EPMC_HardwareInterface::read(const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
   {
-    std::lock_guard<std::mutex> lock(data_mutex_);
 
-    if(use_motor0_){
-      motor0_.angPos = pos0_cache_;
-      // motor0_.angVel = vel0_cache_;
-    }
-    if(use_motor1_){
-      motor1_.angPos = pos1_cache_;
-      // motor1_.angVel = vel1_cache_;
+    std::tie(success, pos0_cache_, pos1_cache_) = epmc_.readPos();
+    if (success) { // only update if read was successfull
+      if(use_motor0_){
+        motor0_.angPos = pos0_cache_;
+        // motor0_.angVel = vel0_cache_;
+      }
+      if(use_motor1_){
+        motor1_.angPos = pos1_cache_;
+        // motor1_.angVel = vel1_cache_;
+      }
     }
 
     return hardware_interface::return_type::OK;
@@ -188,7 +187,6 @@ namespace epmc_hardware_interface
 
   hardware_interface::return_type epmc_hardware_interface ::EPMC_HardwareInterface::write(const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
   {
-    std::lock_guard<std::mutex> lock(data_mutex_);
 
     if(use_motor0_){
       cmd0_cache_ = motor0_.cmdAngVel;
@@ -196,53 +194,9 @@ namespace epmc_hardware_interface
     if(use_motor1_){
       cmd1_cache_ = motor1_.cmdAngVel;
     }
+    epmc_.writeSpeed(cmd0_cache_, cmd1_cache_);
 
     return hardware_interface::return_type::OK;
-  }
-
-  void EPMC_HardwareInterface::serialReadWriteLoop()
-  {
-    while (running_) {
-      epmcReadWriteDuration = (std::chrono::system_clock::now() - epmcReadWriteTime);
-      if (epmcReadWriteDuration.count() > epmcReadWriteTimeInterval)
-      {
-        try {
-          // Read latest state from hardware
-          // float pos0, pos1, v0, v1;
-          // std::tie(success, val0, val1, val2, val3) = epmc_.readMotorData();
-          // if (success) {
-          //   pos0 = val0; 
-          //   pos1 = val1;
-          //   v0 = val2; 
-          //   v1 = val3;
-          // }
-
-          float pos0, pos1;
-          std::tie(success, val0, val1) = epmc_.readPos();
-          if (success) { // only update if read was successfull
-            pos0 = val0; 
-            pos1 = val1;
-          }
-
-          {
-            std::lock_guard<std::mutex> lock(data_mutex_);
-            pos0_cache_ = pos0; 
-            pos1_cache_ = pos1;
-
-            // vel0_cache_ = v0;
-            // vel1_cache_ = v1;
-
-            // Write latest commands
-            epmc_.writeSpeed(cmd0_cache_, cmd1_cache_);
-          }
-        }
-        catch(const std::exception& e)
-        {
-          std::cout << "Error occurred: " << e.what() << std::endl;
-        }
-        epmcReadWriteTime = std::chrono::system_clock::now();
-      }
-    }
   }
 
 } // namespace epmc_hardware_interface
