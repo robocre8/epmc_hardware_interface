@@ -110,6 +110,10 @@ public:
     return serial_conn_.IsOpen();
   }
 
+  //---------------------------------------------------------------------
+  //         BASIC COMMANDS
+  //---------------------------------------------------------------------
+
   void writePWM(int pwm0, int pwm1)
   {
     send((float)WRITE_PWM, (float)pwm0, (float)pwm1);
@@ -171,6 +175,116 @@ public:
     std::tie(success, std::ignore, std::ignore) = recv((float)CLEAR);
     return success;
   }
+
+  //---------------------------------------------------------------------
+  //         ADVANCED COMMANDS (USE WITH CAUTION)
+  //---------------------------------------------------------------------
+
+  void setMaxSpeed(int motor_no, float max_vel)
+  {
+    send((float)SET_MAX_SPEED, (float)motor_no, max_vel);
+  }
+
+  std::tuple<bool, float, float> readTSpeed()
+  {
+    bool success; float v0, v1;
+    std::tie(success, v0, v1) = recv((float)READ_TSPEED);
+    return std::make_tuple(success, v0, v1);
+  }
+
+  void setPPR(int motor_no, float ppr)
+  {
+    send((float)SET_PPR, (float)motor_no, ppr);
+  }
+
+  std::tuple<bool, float> getPPR(int motor_no)
+  {
+    bool success; float ppr;
+    std::tie(success, ppr, std::ignore) = recv((float)GET_PPR, (float)motor_no);
+    return std::make_tuple(success, ppr);
+  }
+
+  void setKp(int motor_no, float kp)
+  {
+    send((float)SET_KP, (float)motor_no, kp);
+  }
+
+  std::tuple<bool, float> getKp(int motor_no)
+  {
+    bool success; float kp;
+    std::tie(success, kp, std::ignore) = recv((float)GET_KP, (float)motor_no);
+    return std::make_tuple(success, kp);
+  }
+
+  void setKi(int motor_no, float ki)
+  {
+    send((float)SET_KI, (float)motor_no, ki);
+  }
+
+  std::tuple<bool, float> getKi(int motor_no)
+  {
+    bool success; float ki;
+    std::tie(success, ki, std::ignore) = recv((float)GET_KI, (float)motor_no);
+    return std::make_tuple(success, ki);
+  }
+
+  void setKd(int motor_no, float kd)
+  {
+    send((float)SET_KD, (float)motor_no, kd);
+  }
+
+  std::tuple<bool, float> getKd(int motor_no)
+  {
+    bool success; float kd;
+    std::tie(success, kd, std::ignore) = recv((float)GET_KD, (float)motor_no);
+    return std::make_tuple(success, kd);
+  }
+
+  void setRdir(int motor_no, int rdir)
+  {
+    send((float)SET_RDIR, (float)motor_no, (float)rdir);
+  }
+
+  std::tuple<bool, int> getRdir(int motor_no)
+  {
+    bool success; float rdir;
+    std::tie(success, rdir, std::ignore) = recv((float)GET_RDIR, (float)motor_no);
+    return std::make_tuple(success, (int)rdir);
+  }
+
+  void setCutOffFreq(int motor_no, float cf)
+  {
+    send((float)SET_CF, (float)motor_no, cf);
+  }
+
+  std::tuple<bool, float> getCutOffFreq(int motor_no)
+  {
+    bool success; float cf;
+    std::tie(success, cf, std::ignore) = recv((float)GET_CF, (float)motor_no);
+    return std::make_tuple(success, cf);
+  }
+
+  void setI2cAddress(int timeout_ms)
+  {
+    send((float)SET_I2C_ADDR, 0.0, (float)timeout_ms);
+  }
+
+  std::tuple<bool, int> getI2cAddress()
+  {
+    bool success; float addr;
+    std::tie(success, addr, std::ignore) = recv((float)GET_I2C_ADDR);
+    return std::make_tuple(success, (int)addr);
+  }
+
+  bool resetAllParams()
+  {
+    bool success;
+    std::tie(success, std::ignore, std::ignore) = recv((float)RESET);
+    return success;
+  }
+
+
+
 
 private:
   LibSerial::SerialPort serial_conn_;
