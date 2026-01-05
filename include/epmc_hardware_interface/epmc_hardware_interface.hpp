@@ -74,7 +74,7 @@ namespace epmc_hardware_interface
     EPMC epmc_; // serial communication
 
     // buffer variables for epmc communication
-    bool success; float val0, val1, val2, val3;
+    bool success, success1; float val0, val1, val2, val3;
 
     Config config_;        // configuration
     Motor motor0_;      // motor0 setup
@@ -87,8 +87,8 @@ namespace epmc_hardware_interface
     float pos0_cache_ = 0.0;
     float pos1_cache_ = 0.0;
 
-    // float vel0_cache_ = 0.0;
-    // float vel1_cache_ = 0.0;
+    float vel0_cache_ = 0.0;
+    float vel1_cache_ = 0.0;
 
     // Cached command from ros2_control
     float cmd0_cache_ = 0.0;
