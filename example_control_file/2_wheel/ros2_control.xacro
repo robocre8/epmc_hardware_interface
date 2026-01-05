@@ -5,7 +5,7 @@
 
       <hardware>
         <plugin>epmc_hardware_interface/EPMC_HardwareInterface</plugin>
-        <param name="serial_port">/dev/ttyUSB0</param>
+        <param name="serial_port">/dev/ttyACM0</param>
         <param name="serial_baud_rate">115200</param>
         <param name="serial_timeout_ms">16</param>
         <param name="motor0_wheel_name">left_wheel_joint</param>
