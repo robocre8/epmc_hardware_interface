@@ -18,9 +18,6 @@
 #include <memory>
 #include <string>
 #include <vector>
-#include <thread>
-#include <atomic>
-#include <mutex>
 
 #include "hardware_interface/handle.hpp"
 #include "hardware_interface/hardware_info.hpp"
@@ -44,9 +41,11 @@ namespace epmc_hardware_interface
 
     struct Config
     {
+      std::string serial_port = "";
+      std::string serial_baud_rate = "";
+      std::string serial_timeout_ms = "";
       std::string motor0_wheel_name = "";
       std::string motor1_wheel_name = "";
-      std::string port = "";
       std::string cmd_vel_timeout_ms = "";
     };
 
@@ -84,23 +83,16 @@ namespace epmc_hardware_interface
     bool use_motor0_ = false;
     bool use_motor1_ = false;
 
-    // Background thread for non-blocking serial I/O
-    std::thread io_thread_;
-    std::atomic<bool> running_{false};
-    std::mutex data_mutex_;
-
     // Cached state from motors
     float pos0_cache_ = 0.0;
     float pos1_cache_ = 0.0;
 
-    // float vel0_cache_ = 0.0;
-    // float vel1_cache_ = 0.0;
+    float vel0_cache_ = 0.0;
+    float vel1_cache_ = 0.0;
 
     // Cached command from ros2_control
     float cmd0_cache_ = 0.0;
     float cmd1_cache_ = 0.0;
-
-    void serialReadWriteLoop();  // Background worker
   };
 
 } // namespace epmc_hardware_interface

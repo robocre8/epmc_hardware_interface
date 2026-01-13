@@ -74,7 +74,7 @@ class EPMC
 public:
   EPMC() = default;
 
-  void connect(const std::string &serial_device, int32_t baud_rate = 57600, int32_t timeout_ms = 100)
+  void connect(const std::string &serial_device, int32_t baud_rate = 115200, int32_t timeout_ms = 100)
   {
     try {
       timeout_ms_ = timeout_ms;
