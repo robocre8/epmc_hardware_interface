@@ -90,9 +90,9 @@ namespace epmc_hardware_interface
   hardware_interface::CallbackReturn EPMC_HardwareInterface::on_configure(const rclcpp_lifecycle::State &)
   {
     RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "Configuring ...please wait...");
-    if (epmc_.connected())
+    if (controller_.connected())
     {
-      epmc_.disconnect();
+      controller_.disconnect();
     }
 
     int serial_baud_rate = std::stoi(config_.serial_baud_rate.c_str());
@@ -101,7 +101,7 @@ namespace epmc_hardware_interface
     if (serial_timeout_ms <= 8)
       serial_timeout_ms = 8;
 
-    epmc_.connect(config_.serial_port, serial_baud_rate, serial_timeout_ms);
+    controller_.connect(config_.serial_port, serial_baud_rate, serial_timeout_ms);
 
     for (int i = 1; i <= 4; i += 1)
     { // wait for the smc to fully setup
@@ -109,12 +109,12 @@ namespace epmc_hardware_interface
       RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "waiting for EPMC controller: %d sec", (i));
     }
 
-    success = epmc_.clearDataBuffer();
-    epmc_.writeSpeed(0.0, 0.0);
+    success = controller_.clearDataBuffer();
+    controller_.writeSpeed(0.0, 0.0);
 
     int cmd_timeout = std::stoi(config_.cmd_vel_timeout_ms.c_str());
-    epmc_.setCmdTimeout(cmd_timeout); // set motor command timeout
-    std::tie(success, val0) = epmc_.getCmdTimeout();
+    controller_.setCmdTimeout(cmd_timeout); // set motor command timeout
+    std::tie(success, val0) = controller_.getCmdTimeout();
     if (success) {
       cmd_timeout = val0;
       RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "motor_cmd_timeout_ms: %d ms", (cmd_timeout));
@@ -130,9 +130,9 @@ namespace epmc_hardware_interface
   hardware_interface::CallbackReturn EPMC_HardwareInterface::on_cleanup(const rclcpp_lifecycle::State &)
   {
     RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "Cleaning up ...please wait...");
-    if (epmc_.connected())
+    if (controller_.connected())
     {
-      epmc_.disconnect();
+      controller_.disconnect();
     }
     RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "Successfully cleaned up!");
 
@@ -142,13 +142,13 @@ namespace epmc_hardware_interface
   hardware_interface::CallbackReturn EPMC_HardwareInterface::on_activate(const rclcpp_lifecycle::State &)
   {
     RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "Activating ...please wait...");
-    if (!epmc_.connected())
+    if (!controller_.connected())
     {
       return hardware_interface::CallbackReturn::ERROR;
     }
 
-    success = epmc_.clearDataBuffer();
-    epmc_.writeSpeed(0.0, 0.0);
+    success = controller_.clearDataBuffer();
+    controller_.writeSpeed(0.0, 0.0);
 
     RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "Successfully Activated");
 
@@ -159,8 +159,8 @@ namespace epmc_hardware_interface
   {
     RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "Deactivating ...please wait...");
 
-    success = epmc_.clearDataBuffer();
-    epmc_.writeSpeed(0.0, 0.0);
+    success = controller_.clearDataBuffer();
+    controller_.writeSpeed(0.0, 0.0);
 
     RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "Successfully Deactivated!");
 
@@ -170,7 +170,7 @@ namespace epmc_hardware_interface
   hardware_interface::return_type EPMC_HardwareInterface::read(const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
   {
 
-    std::tie(success, pos0_cache_, pos1_cache_, vel0_cache_, vel1_cache_) = epmc_.readMotorData();
+    std::tie(success, pos0_cache_, pos1_cache_, vel0_cache_, vel1_cache_) = controller_.readMotorData();
     if (success) { // only update if read was successfull
       if(use_motor0_){
         motor0_.angPos = pos0_cache_;
@@ -194,7 +194,7 @@ namespace epmc_hardware_interface
     if(use_motor1_){
       cmd1_cache_ = motor1_.cmdAngVel;
     }
-    epmc_.writeSpeed(cmd0_cache_, cmd1_cache_);
+    controller_.writeSpeed(cmd0_cache_, cmd1_cache_);
 
     return hardware_interface::return_type::OK;
   }

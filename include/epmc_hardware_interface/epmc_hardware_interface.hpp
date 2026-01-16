@@ -31,8 +31,8 @@
 #include "rclcpp_lifecycle/node_interfaces/lifecycle_node_interface.hpp"
 #include "rclcpp_lifecycle/state.hpp"
 
-#include "epmc_hardware_interface/epmc.hpp"
 #include "epmc_hardware_interface/motor.hpp"
+#include <epmc_serial/epmc_serial.hpp>
 
 namespace epmc_hardware_interface
 {
@@ -71,7 +71,7 @@ namespace epmc_hardware_interface
     hardware_interface::return_type write(const rclcpp::Time &time, const rclcpp::Duration &period) override;
 
   private:
-    EPMC epmc_; // serial communication
+    epmc_serial::EPMCSerialClient controller_; // serial communication
 
     // buffer variables for epmc communication
     bool success; float val0, val1, val2, val3;

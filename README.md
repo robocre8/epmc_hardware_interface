@@ -8,10 +8,21 @@ This the **ROS2** Hardware Interface Package for the **`EPMC (Easy PID Motor Con
 #### Prequisite
 - ensure you've already set up your microcomputer or PC system with ROS2
 
-- install the `libserial-dev` package on your linux machine
+- install the libserial-dev and pkg-config package
+  > sudo apt-get update
+  > sudo apt install libserial-dev pkg-config
+
+- install the epmc_serial cpp library in /opt/epmc_serial (for PC communication with the EPMC module) - [epmc_serial cpp](https://github.com/robocre8/epmc_cpp)
   ```shell
-  sudo apt-get update
-  sudo apt install libserial-dev
+    git clone https://github.com/robocre8/epmc_cpp.git
+
+    cd epmc_cpp
+
+    cmake -B build -DCMAKE_INSTALL_PREFIX=/opt/epmc_serial
+
+    cmake --build build
+
+    sudo cmake --install build
   ```
 
 - install `rosdep` so you can install necessary ros related dependencies for the package.
@@ -47,7 +58,7 @@ This the **ROS2** Hardware Interface Package for the **`EPMC (Easy PID Motor Con
 #
 
 #### Sample robot test
- - Please check out the [**`mobo_bot`**](https://github.com/robocre8/mobo_bot) package to see a proper sample of how the EPMC is used.
+ - Please check out the [**`epmc_sample_bot`**](https://github.com/robocre8/epmc_sample_bot) package to see how the EPMC is basically used in a ROS2 robot.
 
 #
 
