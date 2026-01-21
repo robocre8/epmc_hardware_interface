@@ -32,7 +32,7 @@
 #include "rclcpp_lifecycle/state.hpp"
 
 #include "epmc_hardware_interface/motor.hpp"
-#include <epmc_serial/epmc_serial.hpp>
+#include "epmc_hardware_interface/epmc_serial.hpp"
 
 namespace epmc_hardware_interface
 {

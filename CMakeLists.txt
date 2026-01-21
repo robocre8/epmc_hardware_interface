@@ -18,9 +18,6 @@ find_package(ament_cmake REQUIRED)
 foreach(Dependency IN ITEMS ${THIS_PACKAGE_INCLUDE_DEPENDS})
   find_package(${Dependency} REQUIRED)
 endforeach()
-find_package(epmc_serial REQUIRED
-    PATHS /opt/epmc_serial/lib/cmake/epmc_serial
-)
 
 
 ## COMPILE
@@ -42,7 +39,7 @@ ament_target_dependencies(
   ${THIS_PACKAGE_INCLUDE_DEPENDS}
 )
 
-target_link_libraries(epmc_hardware_interface PRIVATE epmc_serial::epmc_serial)
+target_link_libraries(epmc_hardware_interface PUBLIC serial)
 
 # Export hardware plugins
 pluginlib_export_plugin_description_file(hardware_interface epmc_hardware_interface.xml)
