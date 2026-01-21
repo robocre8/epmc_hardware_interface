@@ -90,7 +90,7 @@ namespace epmc_hardware_interface
   hardware_interface::CallbackReturn EPMC_HardwareInterface::on_configure(const rclcpp_lifecycle::State &)
   {
     RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "Configuring ...please wait...");
-    if (controller_.isConnected())
+    if (controller_.connected())
     {
       controller_.disconnect();
     }
@@ -130,7 +130,7 @@ namespace epmc_hardware_interface
   hardware_interface::CallbackReturn EPMC_HardwareInterface::on_cleanup(const rclcpp_lifecycle::State &)
   {
     RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "Cleaning up ...please wait...");
-    if (controller_.isConnected())
+    if (controller_.connected())
     {
       controller_.disconnect();
     }
@@ -142,7 +142,7 @@ namespace epmc_hardware_interface
   hardware_interface::CallbackReturn EPMC_HardwareInterface::on_activate(const rclcpp_lifecycle::State &)
   {
     RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "Activating ...please wait...");
-    if (!controller_.isConnected())
+    if (!controller_.connected())
     {
       return hardware_interface::CallbackReturn::ERROR;
     }

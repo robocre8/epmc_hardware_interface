@@ -149,7 +149,7 @@ public:
             serial.Close();
     }
 
-    bool isConnected() const
+    bool connected() const
     {
         return serial.IsOpen();
     }
