@@ -180,25 +180,28 @@ public:
 
     // Encoder
     void setPPR(float ppr, uint8_t motor){ write_data1(SET_PPR, ppr, motor); }
-    std::tuple<bool, float> getPPR(uint8_t motor=0){ return read_data1(GET_PPR, motor); }
+    std::tuple<bool, float> getPPR(uint8_t motor){ return read_data1(GET_PPR, motor); }
 
     // Velocity limits
-    void setMaxVel(float v, uint8_t motor){ write_data1(SET_MAX_VEL, v, motor); }
-    std::tuple<bool, float> getMaxVel(uint8_t motor=0){ return read_data1(GET_MAX_VEL, motor); }
+    void setMaxVel(float max_vel, uint8_t motor){ write_data1(SET_MAX_VEL, max_vel, motor); }
+    std::tuple<bool, float> getMaxVel(uint8_t motor){ return read_data1(GET_MAX_VEL, motor); }
 
     // Direction & filters
-    void setRDir(float v, uint8_t motor){ write_data1(SET_RDIR, v, motor); }
-    std::tuple<bool, float> getReverseDir(uint8_t motor=0){ return read_data1(GET_RDIR, motor); }
+    void setRDir(int rdir, uint8_t motor){ write_data1(SET_RDIR, (float)rdir, motor); }
+    std::tuple<bool, float> getRDir(uint8_t motor){ return read_data1(GET_RDIR, motor); }
 
     void setCutoffFreq(float f, uint8_t motor){ write_data1(SET_CUT_FREQ, f, motor); }
-    std::tuple<bool, float> getCutoffFreq(uint8_t motor=0){ return read_data1(GET_CUT_FREQ, motor); }
+    std::tuple<bool, float> getCutoffFreq(uint8_t motor){ return read_data1(GET_CUT_FREQ, motor); }
 
     // Modes & system
-    void setPidMode(float mode){ write_data1(SET_PID_MODE, mode); }
+    void setPidMode(int mode){ write_data1(SET_PID_MODE, (float)mode); }
     std::tuple<bool, float> getPidMode(){ return read_data1(GET_PID_MODE); }
 
-    void setCmdTimeout(float t){ write_data1(SET_CMD_TIMEOUT, t); }
+    void setCmdTimeout(int t){ write_data1(SET_CMD_TIMEOUT, (float)t); }
     std::tuple<bool, float> getCmdTimeout(){ return read_data1(GET_CMD_TIMEOUT); }
+
+    void setI2cAddress(int address) { write_data1(SET_I2C_ADDR, (float)address); }
+    std::tuple<bool, float> getI2cAddress(){ return read_data1(GET_I2C_ADDR); }
 
     bool resetParams(){ 
       bool success;
