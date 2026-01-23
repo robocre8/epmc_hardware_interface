@@ -2,6 +2,7 @@
 
 #include <libserial/SerialPort.h>
 
+#include <iostream>
 #include <cstdint>
 #include <cstring>
 #include <string>
@@ -154,96 +155,6 @@ public:
         return serial.IsOpen();
     }
 
-    /* ---------- Packet Helpers ---------- */
-
-    void sendPacket(uint8_t cmd,
-                    const std::vector<uint8_t>& payload = {})
-    {
-        if (!serial.IsOpen())
-            throw std::runtime_error("Serial port not connected");
-
-        std::vector<uint8_t> packet;
-        packet.reserve(4 + payload.size());
-
-        packet.push_back(START_BYTE);
-        packet.push_back(cmd);
-        packet.push_back(static_cast<uint8_t>(payload.size()));
-        packet.insert(packet.end(), payload.begin(), payload.end());
-
-        uint8_t checksum = 0;
-        for (uint8_t b : packet)
-            checksum += b;
-
-        packet.push_back(checksum);
-
-        serial.Write(packet);
-        serial.DrainWriteBuffer();
-    }
-
-    std::pair<bool, std::vector<float>>
-    readFloats(size_t count)
-    {
-        const size_t bytes_needed = count * sizeof(float);
-        std::vector<uint8_t> buf(bytes_needed);
-
-        serial.Read(buf, bytes_needed, timeout_ms_);
-        if (buf.size() != bytes_needed)
-            return {false, std::vector<float>(count, 0.0f)};
-
-        std::vector<float> values(count);
-        std::memcpy(values.data(), buf.data(), bytes_needed);
-
-        return {true, values};
-    }
-
-    /* ---------- Generic Data ---------- */
-
-    void write_data1(uint8_t cmd, float val, uint8_t pos = 0)
-    {
-        std::vector<uint8_t> payload(1 + sizeof(float));
-        payload[0] = pos;
-        std::memcpy(&payload[1], &val, sizeof(float));
-        sendPacket(cmd, payload);
-    }
-
-    std::tuple<bool, float>
-    read_data1(uint8_t cmd, uint8_t pos = 0)
-    {
-        float dummy = 0.0f;
-        std::vector<uint8_t> payload(1 + sizeof(float));
-        payload[0] = pos;
-        std::memcpy(&payload[1], &dummy, sizeof(float));
-
-        sendPacket(cmd, payload);
-
-        auto [ok, vals] = readFloats(1);
-        return {ok, round_to_dp(vals[0],4)};
-    }
-
-    void write_data2(uint8_t cmd, float a, float b)
-    {
-        std::vector<uint8_t> payload(2 * sizeof(float));
-        std::memcpy(&payload[0], &a, sizeof(float));
-        std::memcpy(&payload[4], &b, sizeof(float));
-        sendPacket(cmd, payload);
-    }
-
-    std::tuple<bool, float, float>
-    read_data2(uint8_t cmd)
-    {
-        sendPacket(cmd);
-        auto [ok, vals] = readFloats(2);
-        return {ok, round_to_dp(vals[0],4), round_to_dp(vals[1],4)};
-    }
-
-    std::tuple<bool, float, float, float, float>
-    read_data4(uint8_t cmd)
-    {
-        sendPacket(cmd);
-        auto [ok, vals] = readFloats(4);
-        return {ok, round_to_dp(vals[0],4), round_to_dp(vals[1],4), round_to_dp(vals[2],4), round_to_dp(vals[3],4)};
-    }
-
     /* ---------- High-Level API ---------- */
 
     // Motion
@@ -303,6 +214,118 @@ public:
 private:
     LibSerial::SerialPort serial;
     int timeout_ms_;
+
+    /* ---------- Packet Helpers ---------- */
+
+    void flush_rx()
+    {
+        if (!serial.IsOpen()) return;
+        try {
+            serial.FlushInputBuffer();  // clears RX
+        } catch (...) {
+        }
+    }
+
+    void flush_tx()
+    {
+        if (!serial.IsOpen()) return;
+        try {
+            serial.DrainWriteBuffer();  // clears TX
+        } catch (...) {
+        }
+    }
+
+    void sendPacket(uint8_t cmd,
+                    const std::vector<uint8_t>& payload = {})
+    {
+        if (!serial.IsOpen()) {
+          throw std::runtime_error("Serial port not connected");
+        }
+        flush_rx();
+        
+        std::vector<uint8_t> packet;
+        packet.reserve(4 + payload.size());
+
+        packet.push_back(START_BYTE);
+        packet.push_back(cmd);
+        packet.push_back(static_cast<uint8_t>(payload.size()));
+        packet.insert(packet.end(), payload.begin(), payload.end());
+
+        uint8_t checksum = 0;
+        for (uint8_t b : packet)
+            checksum += b;
+
+        packet.push_back(checksum);
+
+        serial.Write(packet);
+        serial.DrainWriteBuffer();
+    }
+
+    std::pair<bool, std::vector<float>>
+    readFloats(size_t count)
+    {
+        const size_t bytes_needed = count * sizeof(float);
+        std::vector<uint8_t> buf(bytes_needed);
+
+        serial.Read(buf, bytes_needed, timeout_ms_);
+        if (buf.size() != bytes_needed){
+          flush_rx();
+          return {false, std::vector<float>(count, 0.0f)};
+        }
+
+        std::vector<float> values(count);
+        std::memcpy(values.data(), buf.data(), bytes_needed);
+
+        return {true, values};
+    }
+
+    /* ---------- Generic Data ---------- */
+
+    void write_data1(uint8_t cmd, float val, uint8_t pos = 0)
+    {
+        std::vector<uint8_t> payload(1 + sizeof(float));
+        payload[0] = pos;
+        std::memcpy(&payload[1], &val, sizeof(float));
+        sendPacket(cmd, payload);
+    }
+
+    std::tuple<bool, float>
+    read_data1(uint8_t cmd, uint8_t pos = 0)
+    {
+        float dummy = 0.0f;
+        std::vector<uint8_t> payload(1 + sizeof(float));
+        payload[0] = pos;
+        std::memcpy(&payload[1], &dummy, sizeof(float));
+
+        sendPacket(cmd, payload);
+
+        auto [ok, vals] = readFloats(1);
+        return {ok, round_to_dp(vals[0],4)};
+    }
+
+    void write_data2(uint8_t cmd, float a, float b)
+    {
+        std::vector<uint8_t> payload(2 * sizeof(float));
+        std::memcpy(&payload[0], &a, sizeof(float));
+        std::memcpy(&payload[4], &b, sizeof(float));
+        sendPacket(cmd, payload);
+    }
+
+    std::tuple<bool, float, float>
+    read_data2(uint8_t cmd)
+    {
+        sendPacket(cmd);
+        auto [ok, vals] = readFloats(2);
+        return {ok, round_to_dp(vals[0],4), round_to_dp(vals[1],4)};
+    }
+
+    std::tuple<bool, float, float, float, float>
+    read_data4(uint8_t cmd)
+    {
+        sendPacket(cmd);
+        auto [ok, vals] = readFloats(4);
+        return {ok, round_to_dp(vals[0],4), round_to_dp(vals[1],4), round_to_dp(vals[2],4), round_to_dp(vals[3],4)};
+    }
 };
 
 }
