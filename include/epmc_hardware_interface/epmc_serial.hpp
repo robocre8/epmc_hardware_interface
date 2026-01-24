@@ -270,15 +270,29 @@ private:
         const size_t bytes_needed = count * sizeof(float);
         std::vector<uint8_t> buf(bytes_needed);
 
-        serial.Read(buf, bytes_needed, timeout_ms_);
-        if (buf.size() != bytes_needed){
-          flush_rx();
-          return {false, std::vector<float>(count, 0.0f)};
+        // Fast fail: nothing to read at all
+        if (!serial.IsDataAvailable()) {
+            return {false, std::vector<float>(count, 0.0f)};
+        }
+
+        try {
+            serial.Read(buf, bytes_needed, timeout_ms_);
+            if (buf.size() != bytes_needed){
+              flush_rx();
+              return {false, std::vector<float>(count, 0.0f)};
+            }
+        }
+        catch (const LibSerial::ReadTimeout&) {
+            flush_rx();   // critical for stream resync
+            return {false, std::vector<float>(count, 0.0f)};
+        }
+        catch (...) {
+            flush_rx();
+            return {false, std::vector<float>(count, 0.0f)};
         }
 
         std::vector<float> values(count);
         std::memcpy(values.data(), buf.data(), bytes_needed);
-
         return {true, values};
     }
 
