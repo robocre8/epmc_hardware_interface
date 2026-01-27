@@ -43,6 +43,8 @@ namespace epmc_hardware_interface
     config_.serial_timeout_ms = info_.hardware_parameters["serial_timeout_ms"];
     config_.motor0_wheel_name = info_.hardware_parameters["motor0_wheel_name"];
     config_.motor1_wheel_name = info_.hardware_parameters["motor1_wheel_name"];
+    config_.motor2_wheel_name = info_.hardware_parameters["motor2_wheel_name"];
+    config_.motor3_wheel_name = info_.hardware_parameters["motor3_wheel_name"];
     config_.cmd_vel_timeout_ms = info_.hardware_parameters["cmd_vel_timeout_ms"];
 
     if (config_.motor0_wheel_name != "") {
@@ -52,6 +54,14 @@ namespace epmc_hardware_interface
     if (config_.motor1_wheel_name != "") {
       use_motor1_ = true;
       motor1_.setup(config_.motor1_wheel_name);
+    }
+    if (config_.motor2_wheel_name != "") {
+      use_motor2_ = true;
+      motor2_.setup(config_.motor2_wheel_name);
+    }
+    if (config_.motor3_wheel_name != "") {
+      use_motor3_ = true;
+      motor3_.setup(config_.motor3_wheel_name);
     }
 
     return hardware_interface::CallbackReturn::SUCCESS;
@@ -69,6 +79,14 @@ namespace epmc_hardware_interface
       state_interfaces.emplace_back(hardware_interface::StateInterface(motor1_.name, hardware_interface::HW_IF_POSITION, &motor1_.angPos));
       state_interfaces.emplace_back(hardware_interface::StateInterface(motor1_.name, hardware_interface::HW_IF_VELOCITY, &motor1_.angVel));
     }
+    if(use_motor2_){
+      state_interfaces.emplace_back(hardware_interface::StateInterface(motor2_.name, hardware_interface::HW_IF_POSITION, &motor2_.angPos));
+      state_interfaces.emplace_back(hardware_interface::StateInterface(motor2_.name, hardware_interface::HW_IF_VELOCITY, &motor2_.angVel));
+    }
+    if(use_motor3_){
+      state_interfaces.emplace_back(hardware_interface::StateInterface(motor3_.name, hardware_interface::HW_IF_POSITION, &motor3_.angPos));
+      state_interfaces.emplace_back(hardware_interface::StateInterface(motor3_.name, hardware_interface::HW_IF_VELOCITY, &motor3_.angVel));
+    }
 
     return state_interfaces;
   }
@@ -82,6 +100,12 @@ namespace epmc_hardware_interface
     }
     if(use_motor1_){
       command_interfaces.emplace_back(hardware_interface::CommandInterface(motor1_.name, hardware_interface::HW_IF_VELOCITY, &motor1_.cmdAngVel));
+    }
+    if(use_motor2_){
+      command_interfaces.emplace_back(hardware_interface::CommandInterface(motor2_.name, hardware_interface::HW_IF_VELOCITY, &motor2_.cmdAngVel));
+    }
+    if(use_motor3_){
+      command_interfaces.emplace_back(hardware_interface::CommandInterface(motor3_.name, hardware_interface::HW_IF_VELOCITY, &motor3_.cmdAngVel));
     }
 
     return command_interfaces;
@@ -110,7 +134,7 @@ namespace epmc_hardware_interface
     }
 
     success = controller_.clearDataBuffer();
-    controller_.writeSpeed(0.0, 0.0);
+    controller_.writeSpeed(0.0, 0.0, 0.0, 0.0);
 
     int cmd_timeout = std::stoi(config_.cmd_vel_timeout_ms.c_str());
     controller_.setCmdTimeout(cmd_timeout); // set motor command timeout
@@ -148,7 +172,7 @@ namespace epmc_hardware_interface
     }
 
     success = controller_.clearDataBuffer();
-    controller_.writeSpeed(0.0, 0.0);
+    controller_.writeSpeed(0.0, 0.0, 0.0, 0.0);
 
     RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "Successfully Activated");
 
@@ -160,7 +184,7 @@ namespace epmc_hardware_interface
     RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "Deactivating ...please wait...");
 
     success = controller_.clearDataBuffer();
-    controller_.writeSpeed(0.0, 0.0);
+    controller_.writeSpeed(0.0, 0.0, 0.0, 0.0);
 
     RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "Successfully Deactivated!");
 
@@ -170,7 +194,7 @@ namespace epmc_hardware_interface
   hardware_interface::return_type EPMC_HardwareInterface::read(const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
   {
 
-    std::tie(success, pos0_cache_, pos1_cache_, vel0_cache_, vel1_cache_) = controller_.readMotorData();
+    std::tie(success, pos0_cache_, pos1_cache_, pos2_cache_, pos3_cache_, vel0_cache_, vel1_cache_, vel2_cache_, vel3_cache_) = controller_.readMotorData();
     if (success) { // only update if read was successfull
       if(use_motor0_){
         motor0_.angPos = pos0_cache_;
@@ -179,6 +203,14 @@ namespace epmc_hardware_interface
       if(use_motor1_){
         motor1_.angPos = pos1_cache_;
         motor1_.angVel = vel1_cache_;
+      }
+      if(use_motor2_){
+        motor2_.angPos = pos2_cache_;
+        motor2_.angVel = vel2_cache_;
+      }
+      if(use_motor3_){
+        motor3_.angPos = pos3_cache_;
+        motor3_.angVel = vel3_cache_;
       }
     }
 
@@ -194,7 +226,13 @@ namespace epmc_hardware_interface
     if(use_motor1_){
       cmd1_cache_ = motor1_.cmdAngVel;
     }
-    controller_.writeSpeed(cmd0_cache_, cmd1_cache_);
+    if(use_motor2_){
+      cmd2_cache_ = motor2_.cmdAngVel;
+    }
+    if(use_motor3_){
+      cmd3_cache_ = motor3_.cmdAngVel;
+    }
+    controller_.writeSpeed(cmd0_cache_, cmd1_cache_, cmd2_cache_, cmd3_cache_);
 
     return hardware_interface::return_type::OK;
   }

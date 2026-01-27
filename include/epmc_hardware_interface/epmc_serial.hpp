@@ -158,16 +158,16 @@ public:
     /* ---------- High-Level API ---------- */
 
     // Motion
-    void writeSpeed(float v0, float v1) { write_data2(WRITE_VEL, v0, v1); }
-    void writePWM(float p0, float p1)   { write_data2(WRITE_PWM, p0, p1); }
+    void writeSpeed(float v0, float v1, float v2, float v3) { write_data4(WRITE_VEL, v0, v1, v2, v3); }
+    void writePWM(float p0, float p1, float p2, float p3)   { write_data4(WRITE_PWM, p0, p1, p2, p3); }
 
-    std::tuple<bool, float, float> readPos() { return read_data2(READ_POS); }
-    std::tuple<bool, float, float> readVel() { return read_data2(READ_VEL); }
-    std::tuple<bool, float, float> readUVel(){ return read_data2(READ_UVEL); }
-    std::tuple<bool, float, float> readTVel(){ return read_data2(READ_TVEL); }
+    std::tuple<bool, float, float, float, float> readPos() { return read_data4(READ_POS); }
+    std::tuple<bool, float, float, float, float> readVel() { return read_data4(READ_VEL); }
+    std::tuple<bool, float, float, float, float> readUVel(){ return read_data4(READ_UVEL); }
+    std::tuple<bool, float, float, float, float> readTVel(){ return read_data4(READ_TVEL); }
 
-    std::tuple<bool, float, float, float, float>
-    readMotorData() { return read_data4(READ_MOTOR_DATA); }
+    std::tuple<bool, float, float, float, float, float, float, float, float>
+    readMotorData() { return read_data8(READ_MOTOR_DATA); }
 
     // PID & Control
     void setKP(float v, uint8_t motor) { write_data1(SET_KP, v, motor); }
@@ -320,20 +320,14 @@ private:
         return {ok, round_to_dp(vals[0],4)};
     }
 
-    void write_data2(uint8_t cmd, float a, float b)
+    void write_data4(uint8_t cmd, float a, float b, float c, float d)
     {
-        std::vector<uint8_t> payload(2 * sizeof(float));
+        std::vector<uint8_t> payload(4 * sizeof(float));
         std::memcpy(&payload[0], &a, sizeof(float));
         std::memcpy(&payload[4], &b, sizeof(float));
+        std::memcpy(&payload[8], &c, sizeof(float));
+        std::memcpy(&payload[12], &d, sizeof(float));
         sendPacket(cmd, payload);
-    }
-
-    std::tuple<bool, float, float>
-    read_data2(uint8_t cmd)
-    {
-        sendPacket(cmd);
-        auto [ok, vals] = readFloats(2);
-        return {ok, round_to_dp(vals[0],4), round_to_dp(vals[1],4)};
     }
 
     std::tuple<bool, float, float, float, float>
@@ -342,6 +336,14 @@ private:
         sendPacket(cmd);
         auto [ok, vals] = readFloats(4);
         return {ok, round_to_dp(vals[0],4), round_to_dp(vals[1],4), round_to_dp(vals[2],4), round_to_dp(vals[3],4)};
+    }
+
+    std::tuple<bool, float, float, float, float, float, float, float, float>
+    read_data8(uint8_t cmd)
+    {
+        sendPacket(cmd);
+        auto [ok, vals] = readFloats(8);
+        return {ok, round_to_dp(vals[0],4), round_to_dp(vals[1],4), round_to_dp(vals[2],4), round_to_dp(vals[3],4), round_to_dp(vals[4],4), round_to_dp(vals[5],4), round_to_dp(vals[6],4), round_to_dp(vals[7],4)};
     }
 };
 
