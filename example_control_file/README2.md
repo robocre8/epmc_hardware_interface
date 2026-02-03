@@ -8,34 +8,28 @@ This the **ROS2** Hardware Interface Package for the **`EPMC (Easy PID Motor Con
 #### Prequisite
 - ensure you've already set up your microcomputer or PC system with ROS2
 
-- download and install the epmc-serial-dev pkg. you can also check the [release](https://github.com/robocre8/epmc_serial_cpp/releases/download/v1.3.0/)
+- install the libserial-dev and pkg-config package
+  > sudo apt-get update
+  > sudo apt install libserial-dev pkg-config
 
-**PC (AMD64)**
-```shell
-wget https://github.com/robocre8/epmc_serial_cpp/releases/download/v1.3.0/epmc-serial-dev_1.3.0_amd64.deb
-```
-```shell
-sudo apt install ./epmc-serial-dev_1.3.0_amd64.deb
-```
-**Raspberry Pi (ARM64)**
-```shell
-wget https://github.com/robocre8/epmc_serial_cpp/releases/download/v1.3.0/epmc-serial-dev_1.3.0_arm64.deb
-```
-```shell
-sudo apt install ./epmc-serial-dev_1.3.0_arm64.deb
-```
+- install the epmc_serial cpp library in /opt/epmc_serial (for PC communication with the EPMC module) - [epmc_serial cpp](https://github.com/robocre8/epmc_cpp)
+  ```shell
+    git clone https://github.com/robocre8/epmc_cpp.git
+
+    cd epmc_cpp
+
+    cmake -B build -DCMAKE_INSTALL_PREFIX=/opt/epmc_serial
+
+    cmake --build build
+
+    sudo cmake --install build
+  ```
 
 - install `rosdep` so you can install necessary ros related dependencies for the package.
   ```shell
   sudo apt-get update
-  ```
-  ```shell
   sudo apt install python3-rosdep
-  ```
-  ```shell
   sudo rosdep init
-  ```
-  ```shell
   rosdep update
   ```
 
@@ -45,7 +39,7 @@ sudo apt install ./epmc-serial-dev_1.3.0_arm64.deb
 - In the `src/` folder of your `ros workspace`, clone the repo
   (or you can download and add it manually to the `src/` folder)
   ```shell
-  git clone -b use-pkg https://github.com/robocre8/epmc_hardware_interface.git
+  git clone https://github.com/robocre8/epmc_hardware_interface.git
   ```
 
 - from the `src/` folder, cd into the root directory of your `ros workspace` and run rosdep to install all necessary ros dependencies
@@ -73,13 +67,9 @@ sudo apt install ./epmc-serial-dev_1.3.0_arm64.deb
 
 - check the serial port the driver is connected to:
   ```shell
-  ls /dev/ttyA* # for two wheel control
+  ls /dev/ttyA*
   ```
-  OR
-  ```shell
-  ls /dev/ttyU* # for four wheel control
-  ```
-  > you should see /dev/ttyACM0 or /dev/ttyUSB0 and so on
+  > you should see /dev/ttyACM0 or /dev/ttyACM1 and so on
 
 - once you have gotten the **port**, update the **port** parameter in the **`<ros2_control>`** tag in the URDF's **`ros2_control.xacro`**
 

@@ -44,8 +44,11 @@ namespace epmc_hardware_interface
       std::string serial_port = "";
       std::string serial_baud_rate = "";
       std::string serial_timeout_ms = "";
+      std::string supported_num_of_motors = "";
       std::string motor0_wheel_name = "";
       std::string motor1_wheel_name = "";
+      std::string motor2_wheel_name = "";
+      std::string motor3_wheel_name = "";
       std::string cmd_vel_timeout_ms = "";
     };
 
@@ -71,28 +74,41 @@ namespace epmc_hardware_interface
     hardware_interface::return_type write(const rclcpp::Time &time, const rclcpp::Duration &period) override;
 
   private:
-    epmc_serial::EPMCSerialClient controller_; // serial communication
+    epmc_serial::EPMCSerialClient controller_;
 
     // buffer variables for epmc communication
-    bool success; float val0, val1, val2, val3;
+    bool success; float val0;
+    std::vector<float> val;
+
+    int num_of_motors;
 
     Config config_;        // configuration
     Motor motor0_;      // motor0 setup
     Motor motor1_;      // motor1 setup
+    Motor motor2_;      // motor2 setup
+    Motor motor3_;      // motor3 setup
 
     bool use_motor0_ = false;
     bool use_motor1_ = false;
+    bool use_motor2_ = false;
+    bool use_motor3_ = false;
 
     // Cached state from motors
     float pos0_cache_ = 0.0;
     float pos1_cache_ = 0.0;
+    float pos2_cache_ = 0.0;
+    float pos3_cache_ = 0.0;
 
     float vel0_cache_ = 0.0;
     float vel1_cache_ = 0.0;
+    float vel2_cache_ = 0.0;
+    float vel3_cache_ = 0.0;
 
     // Cached command from ros2_control
     float cmd0_cache_ = 0.0;
     float cmd1_cache_ = 0.0;
+    float cmd2_cache_ = 0.0;
+    float cmd3_cache_ = 0.0;
   };
 
 } // namespace epmc_hardware_interface
