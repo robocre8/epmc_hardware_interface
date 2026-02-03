@@ -8,28 +8,25 @@ This the **ROS2** Hardware Interface Package for the **`EPMC (Easy PID Motor Con
 #### Prequisite
 - ensure you've already set up your microcomputer or PC system with ROS2
 
-- install the libserial-dev and pkg-config package
-  > sudo apt-get update
-  > sudo apt install libserial-dev pkg-config
-
-- install the epmc_serial cpp library in /opt/epmc_serial (for PC communication with the EPMC module) - [epmc_serial cpp](https://github.com/robocre8/epmc_cpp)
+- install the libserial-dev package
   ```shell
-    git clone https://github.com/robocre8/epmc_cpp.git
-
-    cd epmc_cpp
-
-    cmake -B build -DCMAKE_INSTALL_PREFIX=/opt/epmc_serial
-
-    cmake --build build
-
-    sudo cmake --install build
+  sudo apt-get update
+  ```
+  ```shell
+  sudo apt install libserial-dev
   ```
 
 - install `rosdep` so you can install necessary ros related dependencies for the package.
   ```shell
   sudo apt-get update
+  ```
+  ```shell
   sudo apt install python3-rosdep
+  ```
+  ```shell
   sudo rosdep init
+  ```
+  ```shell
   rosdep update
   ```
 
@@ -67,9 +64,13 @@ This the **ROS2** Hardware Interface Package for the **`EPMC (Easy PID Motor Con
 
 - check the serial port the driver is connected to:
   ```shell
-  ls /dev/ttyA*
+  ls /dev/ttyA* # for the 2 motor support module
   ```
-  > you should see /dev/ttyACM0 or /dev/ttyACM1 and so on
+  OR
+  ```shell
+  ls /dev/ttyU* # for the 4 motor support module
+  ```
+  > you should see /dev/ttyACM0 or /dev/ttyUSB0 or ... and so on
 
 - once you have gotten the **port**, update the **port** parameter in the **`<ros2_control>`** tag in the URDF's **`ros2_control.xacro`**
 
