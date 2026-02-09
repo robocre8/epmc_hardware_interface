@@ -44,12 +44,11 @@ namespace epmc_hardware_interface
       std::string serial_port = "";
       std::string serial_baud_rate = "";
       std::string serial_timeout_ms = "";
-      std::string supported_num_of_motors = "";
+      std::string cmd_vel_timeout_ms = "";
       std::string motor0_wheel_name = "";
       std::string motor1_wheel_name = "";
       std::string motor2_wheel_name = "";
       std::string motor3_wheel_name = "";
-      std::string cmd_vel_timeout_ms = "";
     };
 
   public:
@@ -77,10 +76,8 @@ namespace epmc_hardware_interface
     epmc_serial::EPMCSerialClient controller_;
 
     // buffer variables for epmc communication
-    bool success; float val0;
-    std::vector<float> val;
-
-    int num_of_motors;
+    bool success; float buffer0;
+    std::vector<float> buffer;
 
     Config config_;        // configuration
     Motor motor0_;      // motor0 setup

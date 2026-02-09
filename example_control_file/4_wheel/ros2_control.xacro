@@ -5,7 +5,6 @@
 
       <hardware>
         <plugin>epmc_hardware_interface/EPMC_HardwareInterface</plugin>
-        <param name="supported_num_of_motors">4</param>
         <param name="serial_port">/dev/ttyUSB0</param>
         <param name="serial_baud_rate">115200</param>
         <param name="serial_timeout_ms">18</param>

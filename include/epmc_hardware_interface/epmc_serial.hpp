@@ -119,11 +119,6 @@ inline LibSerial::BaudRate convert_baud_rate(int baud_rate)
 namespace epmc_serial
 {
 
-enum class SupportedNumOfMotors: int {
-  TWO = 2,
-  FOUR = 4
-};
-
 class EPMCSerialClient
 {
 public:
@@ -168,7 +163,7 @@ public:
         }
 
         disconnect();
-        throw std::runtime_error("EPMC supported number of motors mismatch");
+        throw std::runtime_error("EPMC Could not connect, Try Again");
     }
 
     void disconnect()
@@ -182,19 +177,6 @@ public:
         return serial.IsOpen();
     }
 
-    void supportedNumOfMotors(SupportedNumOfMotors supported_num_of_motors) {
-      switch (supported_num_of_motors)
-      {
-      case SupportedNumOfMotors::TWO :
-        num_of_motors = 2;
-        break;
-      
-      case SupportedNumOfMotors::FOUR :
-        num_of_motors = 4;
-        break;
-      }
-    };
-
     /* ------------------------------------ */
 
     bool confirmNumOfMotors()
@@ -207,33 +189,22 @@ public:
     /* ---------- High-Level API ---------- */
 
     // Motion
-    void writeSpeed(float v0, float v1, float v2=0.0, float v3=0.0) {
-      if(num_of_motors == 2) write_data2(WRITE_VEL, v0, v1); 
-      else if(num_of_motors == 4) write_data4(WRITE_VEL, v0, v1, v2, v3); 
+    void writeSpeed(float v0, float v1, float v2, float v3) {
+      write_data4(WRITE_VEL, v0, v1, v2, v3); 
     }
 
-    void writePWM(float p0, float p1, float p2=0.0, float p3=0.0)   {
-      if(num_of_motors == 2) write_data2(WRITE_PWM, p0, p1);
-      else if(num_of_motors == 4) write_data4(WRITE_PWM, p0, p1, p2, p3);
+    void writePWM(float p0, float p1, float p2, float p3)   {
+      write_data4(WRITE_PWM, p0, p1, p2, p3);
     }
 
-    std::tuple<bool, std::vector<float>> readPos() { return _read_motor_array(READ_POS); }
-    std::tuple<bool, std::vector<float>> readVel() { return _read_motor_array(READ_VEL); }
-    std::tuple<bool, std::vector<float>> readUVel(){ return _read_motor_array(READ_UVEL); }
-    std::tuple<bool, std::vector<float>> readTVel(){ return _read_motor_array(READ_TVEL); }
+    std::tuple<bool, std::vector<float>> readPos() { return read_data4(READ_POS); }
+    std::tuple<bool, std::vector<float>> readVel() { return read_data4(READ_VEL); }
+    std::tuple<bool, std::vector<float>> readUVel(){ return read_data4(READ_UVEL); }
+    std::tuple<bool, std::vector<float>> readTVel(){ return read_data4(READ_TVEL); }
 
     std::tuple<bool, std::vector<float>>
     readMotorData() {
-      if(num_of_motors == 2){
-        return read_data4(READ_MOTOR_DATA);
-      }
-      else if(num_of_motors == 4){
-        return read_data8(READ_MOTOR_DATA);
-      }
-      else {
-        std::vector<float> values;
-        return {false, values};
-      }
+      return read_data8(READ_MOTOR_DATA);
     }
 
     // PID & Control
@@ -284,7 +255,7 @@ public:
 private:
     LibSerial::SerialPort serial;
     int timeout_ms_;
-    int num_of_motors;
+    int num_of_motors = 4;
 
     /* ---------- Packet Helpers ---------- */
 
@@ -440,20 +411,6 @@ private:
         value[6] = round_to_dp(vals[6],4);
         value[7] = round_to_dp(vals[7],4);
         return {ok, value};
-    }
-
-    std::tuple<bool, std::vector<float>>
-    _read_motor_array(uint8_t cmd){
-      if(num_of_motors == 2){
-        return read_data2(cmd);
-      }
-      else if(num_of_motors == 4){
-        return read_data4(cmd);
-      }
-      else {
-        std::vector<float> values;
-        return {false, values};
-      }
     }
 };
 

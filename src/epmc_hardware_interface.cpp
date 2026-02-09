@@ -41,53 +41,27 @@ namespace epmc_hardware_interface
     config_.serial_port = info_.hardware_parameters["serial_port"];
     config_.serial_baud_rate = info_.hardware_parameters["serial_baud_rate"];
     config_.serial_timeout_ms = info_.hardware_parameters["serial_timeout_ms"];
-    config_.supported_num_of_motors = info_.hardware_parameters["supported_num_of_motors"];
+    config_.cmd_vel_timeout_ms = info_.hardware_parameters["cmd_vel_timeout_ms"];
     config_.motor0_wheel_name = info_.hardware_parameters["motor0_wheel_name"];
     config_.motor1_wheel_name = info_.hardware_parameters["motor1_wheel_name"];
     config_.motor2_wheel_name = info_.hardware_parameters["motor2_wheel_name"];
     config_.motor3_wheel_name = info_.hardware_parameters["motor3_wheel_name"];
-    config_.cmd_vel_timeout_ms = info_.hardware_parameters["cmd_vel_timeout_ms"];
 
-    num_of_motors = std::stoi(config_.supported_num_of_motors.c_str());
-    if (num_of_motors == 2) {
-      controller_.supportedNumOfMotors(epmc_serial::SupportedNumOfMotors::TWO);
-
-      if (config_.motor0_wheel_name != "") {
-        use_motor0_ = true;
-        motor0_.setup(config_.motor0_wheel_name);
-      }
-      if (config_.motor1_wheel_name != "") {
-        use_motor1_ = true;
-        motor1_.setup(config_.motor1_wheel_name);
-      }
-      if (config_.motor2_wheel_name != "" || config_.motor3_wheel_name != "") {
-        RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "EPMC number of supported motors is 2. Adding more wheels not permitted");
-        return hardware_interface::CallbackReturn::ERROR;
-      }
+    if (config_.motor0_wheel_name != "") {
+      use_motor0_ = true;
+      motor0_.setup(config_.motor0_wheel_name);
     }
-    else if (num_of_motors == 4) {
-      controller_.supportedNumOfMotors(epmc_serial::SupportedNumOfMotors::FOUR);
-
-      if (config_.motor0_wheel_name != "") {
-        use_motor0_ = true;
-        motor0_.setup(config_.motor0_wheel_name);
-      }
-      if (config_.motor1_wheel_name != "") {
-        use_motor1_ = true;
-        motor1_.setup(config_.motor1_wheel_name);
-      }
-      if (config_.motor2_wheel_name != "") {
-        use_motor2_ = true;
-        motor2_.setup(config_.motor2_wheel_name);
-      }
-      if (config_.motor3_wheel_name != "") {
-        use_motor3_ = true;
-        motor3_.setup(config_.motor3_wheel_name);
-      }
+    if (config_.motor1_wheel_name != "") {
+      use_motor1_ = true;
+      motor1_.setup(config_.motor1_wheel_name);
     }
-    else {
-      RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "EPMC number of supported motors not specified");
-      return hardware_interface::CallbackReturn::ERROR;
+    if (config_.motor2_wheel_name != "") {
+      use_motor2_ = true;
+      motor2_.setup(config_.motor2_wheel_name);
+    }
+    if (config_.motor3_wheel_name != "") {
+      use_motor3_ = true;
+      motor3_.setup(config_.motor3_wheel_name);
     }
 
     return hardware_interface::CallbackReturn::SUCCESS;
@@ -155,14 +129,13 @@ namespace epmc_hardware_interface
 
     success = controller_.clearDataBuffer();
 
-    if (num_of_motors == 2) controller_.writeSpeed(0.0, 0.0);
-    else if (num_of_motors == 4) controller_.writeSpeed(0.0, 0.0, 0.0, 0.0);
+    controller_.writeSpeed(0.0, 0.0, 0.0, 0.0);
 
     int cmd_timeout = std::stoi(config_.cmd_vel_timeout_ms.c_str());
     controller_.setCmdTimeout(cmd_timeout); // set motor command timeout
-    std::tie(success, val0) = controller_.getCmdTimeout();
+    std::tie(success, buffer0) = controller_.getCmdTimeout();
     if (success) {
-      cmd_timeout = val0;
+      cmd_timeout = buffer0;
       RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "motor_cmd_timeout_ms: %d ms", (cmd_timeout));
     } else {
       RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "ERROR: could not read motor_cmd_timeout_ms");
@@ -194,8 +167,7 @@ namespace epmc_hardware_interface
     }
 
     success = controller_.clearDataBuffer();
-    if (num_of_motors == 2) controller_.writeSpeed(0.0, 0.0);
-    else if (num_of_motors == 4) controller_.writeSpeed(0.0, 0.0, 0.0, 0.0);
+    controller_.writeSpeed(0.0, 0.0, 0.0, 0.0);
 
     RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "Successfully Activated");
 
@@ -207,8 +179,7 @@ namespace epmc_hardware_interface
     RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "Deactivating ...please wait...");
 
     success = controller_.clearDataBuffer();
-    if (num_of_motors == 2) controller_.writeSpeed(0.0, 0.0);
-    else if (num_of_motors == 4) controller_.writeSpeed(0.0, 0.0, 0.0, 0.0);
+    controller_.writeSpeed(0.0, 0.0, 0.0, 0.0);
 
     RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "Successfully Deactivated!");
 
@@ -217,45 +188,26 @@ namespace epmc_hardware_interface
 
   hardware_interface::return_type EPMC_HardwareInterface::read(const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
   {
+    std::tie(success, buffer) = controller_.readMotorData();
+    if (success) { // only update if read was successfull
+      pos0_cache_ = buffer.at(0); pos1_cache_ = buffer.at(1); pos2_cache_ = buffer.at(2); pos3_cache_ = buffer.at(3);
+      vel0_cache_ = buffer.at(4); vel1_cache_ = buffer.at(5); vel2_cache_ = buffer.at(6); vel3_cache_ = buffer.at(7);
 
-    if (num_of_motors == 2){
-      std::tie(success, val) = controller_.readMotorData();
-      if (success) { // only update if read was successfull
-        pos0_cache_ = val.at(0); pos1_cache_ = val.at(1);
-        vel0_cache_ = val.at(2); vel1_cache_ = val.at(3);
-
-        if(use_motor0_){
-          motor0_.angPos = pos0_cache_;
-          motor0_.angVel = vel0_cache_;
-        }
-        if(use_motor1_){
-          motor1_.angPos = pos1_cache_;
-          motor1_.angVel = vel1_cache_;
-        }
+      if(use_motor0_){
+        motor0_.angPos = pos0_cache_;
+        motor0_.angVel = vel0_cache_;
       }
-    }
-    else if (num_of_motors == 4){
-      std::tie(success, val) = controller_.readMotorData();
-      if (success) { // only update if read was successfull
-        pos0_cache_ = val.at(0); pos1_cache_ = val.at(1); pos2_cache_ = val.at(2); pos3_cache_ = val.at(3);
-        vel0_cache_ = val.at(4); vel1_cache_ = val.at(5); vel2_cache_ = val.at(6); vel3_cache_ = val.at(7);
-
-        if(use_motor0_){
-          motor0_.angPos = pos0_cache_;
-          motor0_.angVel = vel0_cache_;
-        }
-        if(use_motor1_){
-          motor1_.angPos = pos1_cache_;
-          motor1_.angVel = vel1_cache_;
-        }
-        if(use_motor2_){
-          motor2_.angPos = pos2_cache_;
-          motor2_.angVel = vel2_cache_;
-        }
-        if(use_motor3_){
-          motor3_.angPos = pos3_cache_;
-          motor3_.angVel = vel3_cache_;
-        }
+      if(use_motor1_){
+        motor1_.angPos = pos1_cache_;
+        motor1_.angVel = vel1_cache_;
+      }
+      if(use_motor2_){
+        motor2_.angPos = pos2_cache_;
+        motor2_.angVel = vel2_cache_;
+      }
+      if(use_motor3_){
+        motor3_.angPos = pos3_cache_;
+        motor3_.angVel = vel3_cache_;
       }
     }
 
@@ -264,30 +216,19 @@ namespace epmc_hardware_interface
 
   hardware_interface::return_type epmc_hardware_interface ::EPMC_HardwareInterface::write(const rclcpp::Time & /*time*/, const rclcpp::Duration & /*period*/)
   {
-    if (num_of_motors == 2){
-      if(use_motor0_){
-        cmd0_cache_ = motor0_.cmdAngVel;
-      }
-      if(use_motor1_){
-        cmd1_cache_ = motor1_.cmdAngVel;
-      }
-      controller_.writeSpeed(cmd0_cache_, cmd1_cache_);
+    if(use_motor0_){
+      cmd0_cache_ = motor0_.cmdAngVel;
     }
-    else if (num_of_motors == 4){
-      if(use_motor0_){
-        cmd0_cache_ = motor0_.cmdAngVel;
-      }
-      if(use_motor1_){
-        cmd1_cache_ = motor1_.cmdAngVel;
-      }
-      if(use_motor2_){
-        cmd2_cache_ = motor2_.cmdAngVel;
-      }
-      if(use_motor3_){
-        cmd3_cache_ = motor3_.cmdAngVel;
-      }
-      controller_.writeSpeed(cmd0_cache_, cmd1_cache_, cmd2_cache_, cmd3_cache_);
+    if(use_motor1_){
+      cmd1_cache_ = motor1_.cmdAngVel;
     }
+    if(use_motor2_){
+      cmd2_cache_ = motor2_.cmdAngVel;
+    }
+    if(use_motor3_){
+      cmd3_cache_ = motor3_.cmdAngVel;
+    }
+    controller_.writeSpeed(cmd0_cache_, cmd1_cache_, cmd2_cache_, cmd3_cache_);
 
     return hardware_interface::return_type::OK;
   }
