@@ -219,10 +219,10 @@ namespace epmc_hardware_interface
   {
 
     if (num_of_motors == 2){
-      std::tie(success, val) = controller_.readMotorData();
+      std::tie(success, buffer) = controller_.readMotorData();
       if (success) { // only update if read was successfull
-        pos0_cache_ = val.at(0); pos1_cache_ = val.at(1);
-        vel0_cache_ = val.at(2); vel1_cache_ = val.at(3);
+        pos0_cache_ = buffer.at(0); pos1_cache_ = buffer.at(1);
+        vel0_cache_ = buffer.at(2); vel1_cache_ = buffer.at(3);
 
         if(use_motor0_){
           motor0_.angPos = pos0_cache_;
@@ -235,10 +235,10 @@ namespace epmc_hardware_interface
       }
     }
     else if (num_of_motors == 4){
-      std::tie(success, val) = controller_.readMotorData();
+      std::tie(success, buffer) = controller_.readMotorData();
       if (success) { // only update if read was successfull
-        pos0_cache_ = val.at(0); pos1_cache_ = val.at(1); pos2_cache_ = val.at(2); pos3_cache_ = val.at(3);
-        vel0_cache_ = val.at(4); vel1_cache_ = val.at(5); vel2_cache_ = val.at(6); vel3_cache_ = val.at(7);
+        pos0_cache_ = buffer.at(0); pos1_cache_ = buffer.at(1); pos2_cache_ = buffer.at(2); pos3_cache_ = buffer.at(3);
+        vel0_cache_ = buffer.at(4); vel1_cache_ = buffer.at(5); vel2_cache_ = buffer.at(6); vel3_cache_ = buffer.at(7);
 
         if(use_motor0_){
           motor0_.angPos = pos0_cache_;

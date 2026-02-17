@@ -78,7 +78,7 @@ namespace epmc_hardware_interface
 
     // buffer variables for epmc communication
     bool success; float val0;
-    std::vector<float> val;
+    std::vector<float> buffer;
 
     int num_of_motors;
 
