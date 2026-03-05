@@ -284,7 +284,7 @@ public:
 private:
     LibSerial::SerialPort serial;
     int timeout_ms_;
-    int num_of_motors;
+    int num_of_motors = 2;
 
     /* ---------- Packet Helpers ---------- */
 

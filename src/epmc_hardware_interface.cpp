@@ -48,9 +48,11 @@ namespace epmc_hardware_interface
     config_.motor3_wheel_name = info_.hardware_parameters["motor3_wheel_name"];
     config_.cmd_vel_timeout_ms = info_.hardware_parameters["cmd_vel_timeout_ms"];
 
-    num_of_motors = std::stoi(config_.supported_num_of_motors.c_str());
+    if (config_.supported_num_of_motors == "") num_of_motors = 2; // default
+    else num_of_motors = std::stoi(config_.supported_num_of_motors.c_str());
+
     if (num_of_motors == 2) {
-      controller_.supportedNumOfMotors(epmc_serial::SupportedNumOfMotors::TWO);
+      // controller_.supportedNumOfMotors(epmc_serial::SupportedNumOfMotors::TWO);
 
       if (config_.motor0_wheel_name != "") {
         use_motor0_ = true;
@@ -61,7 +63,7 @@ namespace epmc_hardware_interface
         motor1_.setup(config_.motor1_wheel_name);
       }
       if (config_.motor2_wheel_name != "" || config_.motor3_wheel_name != "") {
-        RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "EPMC number of supported motors is 2. Adding more wheels not permitted");
+        RCLCPP_ERROR(rclcpp::get_logger("EPMC_HardwareInterface"), "EPMC number of supported motors is 2. Adding more wheels not permitted");
         return hardware_interface::CallbackReturn::ERROR;
       }
     }
@@ -86,7 +88,7 @@ namespace epmc_hardware_interface
       }
     }
     else {
-      RCLCPP_INFO(rclcpp::get_logger("EPMC_HardwareInterface"), "EPMC number of supported motors not specified");
+      RCLCPP_ERROR(rclcpp::get_logger("EPMC_HardwareInterface"), "EPMC number of supported motors not specified");
       return hardware_interface::CallbackReturn::ERROR;
     }
 
